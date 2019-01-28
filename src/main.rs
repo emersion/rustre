@@ -66,56 +66,46 @@ fn main() {
 			"int" => Type::Int,
 			"float" => Type::Float,
 			"string" => Type::String,
-			_ => unreachable!(), // TODO: better error message
+			_ => panic!("invalid type: {}", pair.as_str())
 		}
 	}
 
 	fn parse_arg(pair: Pair<Rule>) -> (String, Type) {
-		match pair.as_rule() {
-			Rule::arg => {
-				let mut inner_rules = pair.into_inner();
-				(
-					inner_rules.next().unwrap().as_str().to_string(),
-					parse_type(inner_rules.next().unwrap()),
-				)
-			},
-			_ => unreachable!(),
-		}
+		assert!(pair.as_rule() == Rule::arg);
+
+		let mut inner_rules = pair.into_inner();
+		(
+			inner_rules.next().unwrap().as_str().to_string(),
+			parse_type(inner_rules.next().unwrap()),
+		)
 	}
 
 	fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
-		match pair.as_rule() {
-			Rule::arg_list => {
-				HashMap::from_iter(pair.into_inner().map(parse_arg))
-			},
-			_ => unreachable!(),
-		}
+		assert!(pair.as_rule() == Rule::arg_list);
+		HashMap::from_iter(pair.into_inner().map(parse_arg))
 	}
 
 	fn parse_eq_list(pair: Pair<Rule>) -> Vec<Equation> {
+		assert!(pair.as_rule() == Rule::eq_list);
+
 		Vec::new() // TODO
 	}
 
 	fn parse_node(pair: Pair<Rule>) -> Node {
-		match pair.as_rule() {
-			Rule::node => {
-				let mut inner_rules = pair.into_inner();
-				Node{
-					name: inner_rules.next().unwrap().as_str().to_string(),
-					args_in: parse_arg_list(inner_rules.next().unwrap()),
-					args_out: parse_arg_list(inner_rules.next().unwrap()),
-					body: parse_eq_list(inner_rules.next().unwrap()),
-				}
-			},
-			_ => unreachable!(),
+		assert!(pair.as_rule() == Rule::node);
+
+		let mut inner_rules = pair.into_inner();
+		Node{
+			name: inner_rules.next().unwrap().as_str().to_string(),
+			args_in: parse_arg_list(inner_rules.next().unwrap()),
+			args_out: parse_arg_list(inner_rules.next().unwrap()),
+			body: parse_eq_list(inner_rules.next().unwrap()),
 		}
 	}
 
 	fn parse_file(pair: Pair<Rule>) -> Vec<Node> {
-		match pair.as_rule() {
-			Rule::node_list => pair.into_inner().map(parse_node).collect(),
-			_ => unreachable!(),
-		}
+		assert!(pair.as_rule() == Rule::node_list);
+		pair.into_inner().map(parse_node).collect()
 	}
 
 	println!("{:?}", parse_file(successful_parse.unwrap().next().unwrap()));
