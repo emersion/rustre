@@ -4,6 +4,7 @@ extern crate pest_derive;
 
 use pest::Parser;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 #[derive(Parser)]
 #[grammar = "lustre.pest"]
@@ -11,27 +12,27 @@ pub struct LustreParser;
 
 #[derive(Debug)]
 enum Type {
-	TypeUnit,
-	TypeBool,
-	TypeInt,
-	TypeFloat,
-	TypeString,
+	Unit,
+	Bool,
+	Int,
+	Float,
+	String,
 }
 
 #[derive(Debug)]
 enum Const {
-	ConstString(String),
-	ConstInt(i32),
-	ConstFloat(f32),
+	String(String),
+	Int(i32),
+	Float(f32),
 }
 
 #[derive(Debug)]
 enum Expr {
-	ExprCall{
+	Call{
 		name: String,
 		args: Vec<Expr>,
 	},
-	ExprConst(Const),
+	Const(Const),
 }
 
 #[derive(Debug)]
@@ -58,8 +59,37 @@ fn main() {
 
 	use pest::iterators::Pair;
 
+	fn parse_type(pair: Pair<Rule>) -> Type {
+		match pair.as_str() {
+			"unit" => Type::Unit,
+			"bool" => Type::Bool,
+			"int" => Type::Int,
+			"float" => Type::Float,
+			"string" => Type::String,
+			_ => unreachable!(), // TODO: better error message
+		}
+	}
+
+	fn parse_arg(pair: Pair<Rule>) -> (String, Type) {
+		match pair.as_rule() {
+			Rule::arg => {
+				let mut inner_rules = pair.into_inner();
+				(
+					inner_rules.next().unwrap().as_str().to_string(),
+					parse_type(inner_rules.next().unwrap()),
+				)
+			},
+			_ => unreachable!(),
+		}
+	}
+
 	fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
-		HashMap::new() // TODO
+		match pair.as_rule() {
+			Rule::arg_list => {
+				HashMap::from_iter(pair.into_inner().map(parse_arg))
+			},
+			_ => unreachable!(),
+		}
 	}
 
 	fn parse_eq_list(pair: Pair<Rule>) -> Vec<Equation> {
