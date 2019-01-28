@@ -2,8 +2,7 @@ WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
-typ = { "unit" | "bool" | "int" | "float" | "string" }
-arg_list = { (ident ~ ("," ~ ident)* ~ ":" ~ typ)* }
+arg_list = { (ident ~ ("," ~ ident)* ~ ":" ~ ident)* }
 call = { ident ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
 bool = { "true" | "false" }
 int = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
@@ -21,4 +20,5 @@ node = {
 	"returns" ~ "(" ~ arg_list ~ ")" ~ ";" ~
 	"let" ~ eq* ~ "tel"
 }
-file = { SOI ~ node* ~ EOI }
+node_list = { node* }
+file = _{ SOI ~ node_list ~ EOI }
