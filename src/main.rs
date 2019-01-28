@@ -21,9 +21,11 @@ enum Type {
 
 #[derive(Debug)]
 enum Const {
-	String(String),
+	Unit,
+	Bool(bool),
 	Int(i32),
 	Float(f32),
+	String(String),
 }
 
 #[derive(Debug)]
@@ -85,10 +87,49 @@ fn main() {
 		HashMap::from_iter(pair.into_inner().map(parse_arg))
 	}
 
+	fn parse_constant(pair: Pair<Rule>) -> Const {
+		match pair.as_rule() {
+			Rule::bool => match pair.as_str() {
+				"true" => Const::Bool(true),
+				"false" => Const::Bool(false),
+				_ => unreachable!(),
+			},
+			Rule::int => unreachable!(), // TODO
+			Rule::string => Const::String(pair.into_inner().next().unwrap().as_str().to_string()),
+			_ => unreachable!(),
+		}
+	}
+
+	fn parse_expr(pair: Pair<Rule>) -> Expr {
+		match pair.as_rule() {
+			Rule::call => {
+				let mut inner_rules = pair.into_inner();
+				Expr::Call{
+					name: inner_rules.next().unwrap().as_str().to_string(),
+					args: inner_rules.map(parse_expr).collect(),
+				}
+			},
+			Rule::constant => {
+				let c = parse_constant(pair.into_inner().next().unwrap());
+				Expr::Const(c)
+			},
+			_ => unreachable!(),
+		}
+	}
+
+	fn parse_eq(pair: Pair<Rule>) -> Equation {
+		assert!(pair.as_rule() == Rule::eq);
+
+		let mut inner_rules = pair.into_inner();
+		Equation{
+			name: inner_rules.next().unwrap().as_str().to_string(),
+			value: parse_expr(inner_rules.next().unwrap()),
+		}
+	}
+
 	fn parse_eq_list(pair: Pair<Rule>) -> Vec<Equation> {
 		assert!(pair.as_rule() == Rule::eq_list);
-
-		Vec::new() // TODO
+		pair.into_inner().map(parse_eq).collect()
 	}
 
 	fn parse_node(pair: Pair<Rule>) -> Node {

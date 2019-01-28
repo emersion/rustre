@@ -14,7 +14,7 @@ char = {
 	| "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
 }
 constant = { bool | int | string }
-expr = { call | constant }
+expr = _{ call | constant }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
 node = {
