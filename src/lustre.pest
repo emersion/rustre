@@ -15,10 +15,11 @@ char = {
 constant = { bool | int | string }
 expr = { call | constant }
 eq = { ident ~ "=" ~ expr ~ ";" }
+eq_list = { eq* }
 node = {
 	"node" ~ ident ~ "(" ~ arg_list ~ ")" ~
 	"returns" ~ "(" ~ arg_list ~ ")" ~ ";" ~
-	"let" ~ eq* ~ "tel"
+	"let" ~ eq_list ~ "tel"
 }
 node_list = { node* }
 file = _{ SOI ~ node_list ~ EOI }

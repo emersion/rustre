@@ -58,21 +58,30 @@ fn main() {
 
 	use pest::iterators::Pair;
 
+	fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
+		HashMap::new() // TODO
+	}
+
+	fn parse_eq_list(pair: Pair<Rule>) -> Vec<Equation> {
+		Vec::new() // TODO
+	}
+
 	fn parse_node(pair: Pair<Rule>) -> Node {
 		match pair.as_rule() {
-			// TODO
-			Rule::node => Node{
-				name: pair.into_inner().next().unwrap().to_string(),
-				args_in: HashMap::new(),
-				args_out: HashMap::new(),
-				body: Vec::new(),
+			Rule::node => {
+				let mut inner_rules = pair.into_inner();
+				Node{
+					name: inner_rules.next().unwrap().as_str().to_string(),
+					args_in: parse_arg_list(inner_rules.next().unwrap()),
+					args_out: parse_arg_list(inner_rules.next().unwrap()),
+					body: parse_eq_list(inner_rules.next().unwrap()),
+				}
 			},
 			_ => unreachable!(),
 		}
 	}
 
 	fn parse_file(pair: Pair<Rule>) -> Vec<Node> {
-		println!("{:?}", pair.as_rule());
 		match pair.as_rule() {
 			Rule::node_list => pair.into_inner().map(parse_node).collect(),
 			_ => unreachable!(),
