@@ -9,13 +9,14 @@ call = { ident ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
 bool = { "true" | "false" }
 int = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
 float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* | "." ~ ASCII_DIGIT+ }
+unit = { "()" }
 string = ${ "\"" ~ inner ~ "\"" }
 inner = @{ char* }
 char = {
 	!("\"" | "\\") ~ ANY
 	| "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
 }
-constant = { bool | float | int | string }
+constant = { bool | float | int | string | unit }
 unop = { "-" | "-." | "not" }
 op = { "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
 	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" }

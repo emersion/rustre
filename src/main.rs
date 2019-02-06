@@ -14,7 +14,7 @@ use std::io::{Write, Result, stdout};
 pub struct LustreParser;
 
 fn main() {
-	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; tel";
+	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; j = (); tel";
 	let successful_parse = LustreParser::parse(Rule::file, successful_src);
 	println!("{:?}", successful_parse);
 
@@ -66,6 +66,7 @@ fn main() {
 			Rule::int => Const::Int(pair.as_str().parse::<i32>().unwrap()),
 			Rule::float => Const::Float(pair.as_str().parse::<f32>().unwrap()),
 			Rule::string => Const::String(pair.into_inner().next().unwrap().as_str().to_string()),
+			Rule::unit => Const::Unit,
 			_ => unreachable!(),
 		}
 	}
