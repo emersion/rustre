@@ -6,7 +6,6 @@ mod ast;
 
 use pest::Parser;
 use std::collections::HashMap;
-use std::iter::FromIterator;
 use crate::ast::*;
 
 #[derive(Parser)]
@@ -14,7 +13,7 @@ use crate::ast::*;
 pub struct LustreParser;
 
 fn main() {
-	let successful_src = "node abc() returns (o: unit); let o = print(\"hello world\"); tel";
+	let successful_src = "node abc() returns (o, p: unit); let o = print(\"hello world\"); tel";
 	let successful_parse = LustreParser::parse(Rule::file, successful_src);
 	println!("{:?}", successful_parse);
 
@@ -34,19 +33,26 @@ fn main() {
 		}
 	}
 
-	fn parse_arg(pair: Pair<Rule>) -> (String, Type) {
+	fn parse_arg(pair: Pair<Rule>) -> (Vec<String>, Type) {
 		assert!(pair.as_rule() == Rule::arg);
 
 		let mut inner_rules = pair.into_inner();
 		(
-			inner_rules.next().unwrap().as_str().to_string(),
+			inner_rules.next().unwrap().into_inner().map(|p| p.as_str().to_string()).collect(),
 			parse_type(inner_rules.next().unwrap()),
 		)
 	}
 
 	fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
 		assert!(pair.as_rule() == Rule::arg_list);
-		HashMap::from_iter(pair.into_inner().map(parse_arg))
+		let mut arg_list = HashMap::new();
+		for arg_idents in pair.into_inner() {
+			let (args, typ) = parse_arg(arg_idents);
+			for arg in args {
+				arg_list.insert(arg, typ);
+			}
+		}
+		arg_list
 	}
 
 	fn parse_constant(pair: Pair<Rule>) -> Const {

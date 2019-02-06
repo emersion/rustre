@@ -2,7 +2,8 @@ WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
-arg = { ident ~ ":" ~ ident }
+arg_idents = { ident ~ ("," ~ ident)* }
+arg = { arg_idents ~ ":" ~ ident }
 arg_list = { (arg ~ ("," ~ arg)*)? }
 call = { ident ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
 bool = { "true" | "false" }
