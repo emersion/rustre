@@ -8,13 +8,14 @@ arg_list = { (arg ~ ("," ~ arg)*)? }
 call = { ident ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
 bool = { "true" | "false" }
 int = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* | "." ~ ASCII_DIGIT+ }
 string = ${ "\"" ~ inner ~ "\"" }
 inner = @{ char* }
 char = {
 	!("\"" | "\\") ~ ANY
 	| "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
 }
-constant = { bool | int | string }
+constant = { bool | float | int | string }
 unop = { "-" | "-." | "not" }
 op = { "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
 	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" }
