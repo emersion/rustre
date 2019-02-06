@@ -2,54 +2,16 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+mod ast;
+
 use pest::Parser;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use crate::ast::*;
 
 #[derive(Parser)]
 #[grammar = "lustre.pest"]
 pub struct LustreParser;
-
-#[derive(Debug)]
-enum Type {
-	Unit,
-	Bool,
-	Int,
-	Float,
-	String,
-}
-
-#[derive(Debug)]
-enum Const {
-	Unit,
-	Bool(bool),
-	Int(i32),
-	Float(f32),
-	String(String),
-}
-
-#[derive(Debug)]
-enum Expr {
-	Call{
-		name: String,
-		args: Vec<Expr>,
-	},
-	Const(Const),
-}
-
-#[derive(Debug)]
-struct Equation {
-	name: String,
-	value: Expr,
-}
-
-#[derive(Debug)]
-struct Node {
-	name: String,
-	args_in: HashMap<String, Type>,
-	args_out: HashMap<String, Type>,
-	body: Vec<Equation>,
-}
 
 fn main() {
 	let successful_src = "node abc() returns (o: unit); let o = print(\"hello world\"); tel";
