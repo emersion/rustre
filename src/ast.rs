@@ -19,12 +19,20 @@ pub enum Const {
 }
 
 #[derive(Debug)]
+pub enum Unop {
+	Minus,
+	MinusDot,
+	Not,
+}
+
+#[derive(Debug)]
 pub enum Expr {
 	Call{
 		name: String,
 		args: Vec<Expr>,
 	},
 	Const(Const),
+	UnopExpr(Unop, Box<Expr>),
 }
 
 #[derive(Debug)]

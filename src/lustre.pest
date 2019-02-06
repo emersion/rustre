@@ -15,7 +15,11 @@ char = {
 	| "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
 }
 constant = { bool | int | string }
-expr = _{ call | constant }
+unop = { "-" | "-." | "not" }
+op = { "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
+	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" }
+unop_expr = { unop ~ expr }
+expr = _{ call | constant | unop_expr }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
 local = { ("var" ~ arg_list ~ ";")? }

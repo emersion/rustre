@@ -14,7 +14,7 @@ use std::io::{Write, Result, stdout};
 pub struct LustreParser;
 
 fn main() {
-	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); tel";
+	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = -\"s\"; tel";
 	let successful_parse = LustreParser::parse(Rule::file, successful_src);
 	println!("{:?}", successful_parse);
 
@@ -77,6 +77,16 @@ fn main() {
 		}
 	}
 
+	fn parse_unop(pair: Pair<Rule>) -> Unop {
+		assert!(pair.as_rule() == Rule::unop);
+		match pair.as_str() {
+			"-" => Unop::Minus,
+			"-." => Unop::MinusDot,
+			"not" => Unop::Not,
+			_ => unreachable!(),
+		}
+	}
+
 	fn parse_expr(pair: Pair<Rule>) -> Expr {
 		match pair.as_rule() {
 			Rule::call => {
@@ -89,6 +99,12 @@ fn main() {
 			Rule::constant => {
 				let c = parse_constant(pair.into_inner().next().unwrap());
 				Expr::Const(c)
+			},
+			Rule::unop_expr => {
+				let mut inner_rules = pair.into_inner();
+				let op = parse_unop(inner_rules.next().unwrap());
+				let e = parse_expr(inner_rules.next().unwrap());
+				Expr::UnopExpr(op, Box::new(e))
 			},
 			_ => unreachable!(),
 		}
@@ -155,6 +171,7 @@ fn main() {
 				write!(w, ")")
 			},
 			Expr::Const(c) => format_const(w, c),
+			Expr::UnopExpr(o, e) => unreachable!(), // TODO
 		}
 	}
 
