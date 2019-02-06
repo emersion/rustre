@@ -18,9 +18,11 @@ constant = { bool | int | string }
 expr = _{ call | constant }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
+local = { ("var" ~ arg_list ~ ";")? }
 node = {
 	"node" ~ ident ~ "(" ~ arg_list ~ ")" ~
 	"returns" ~ "(" ~ arg_list ~ ")" ~ ";" ~
+	local ~
 	"let" ~ eq_list ~ "tel"
 }
 node_list = { node* }

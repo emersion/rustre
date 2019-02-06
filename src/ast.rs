@@ -38,5 +38,6 @@ pub struct Node {
 	pub name: String,
 	pub args_in: HashMap<String, Type>,
 	pub args_out: HashMap<String, Type>,
+	pub local: HashMap<String, Type>,
 	pub body: Vec<Equation>,
 }
