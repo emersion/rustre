@@ -56,6 +56,7 @@ impl WriterTo for Expr {
 					Binop::Eq => "==",
 					Binop::And => "&&",
 					Binop::Or => "||",
+					Binop::Fby => "fby",
 				})?;
 				e2.write_to(w)
 			},
@@ -70,6 +71,20 @@ impl WriterTo for Expr {
 				else_part.write_to(w)?;
 				write!(w, "}}")
 			},
+			Expr::Tuple(vex) => {
+				match vex.split_first() {
+					Some ((fst, elems)) => {
+						write!(w, "(")?;
+						fst.write_to(w)?;
+						for e in elems { // skipping #1
+							write!(w, ", ")?;
+							e.write_to(w)?;
+						}
+						write!(w, ")")
+					},
+					None => unreachable!(),
+				}
+			}
 		}
 	}
 }

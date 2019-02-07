@@ -19,12 +19,13 @@ char = {
 constant = { bool | float | int | string | unit }
 unop = @{ "-" | "-." | "not" }
 binop = @{ "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
-	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" }
+	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" | "fby" }
 unop_expr = { unop ~ expr }
 binop_expr = { expr ~ binop ~ expr }
 ifrule = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
 pexpr = { "(" ~ expr ~ ")" }
-expr = _{ call | constant | unop_expr | ifrule | ident | pexpr }
+expr_tuple = { "(" ~ expr ~ ("," ~ expr)+ ~ ")" }
+expr = _{ call | constant | unop_expr | ifrule | ident | expr_tuple | pexpr }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
 local = { ("var" ~ arg_list ~ ";")? }

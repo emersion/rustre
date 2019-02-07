@@ -92,6 +92,7 @@ fn parse_binop(pair: Pair<Rule>) -> Binop {
 		"=" => Binop::Eq,
 		"and" => Binop::And,
 		"or" => Binop::Or,
+		"fby" => Binop::Fby,
 		_ => unreachable!(),
 	}
 }
@@ -135,7 +136,11 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 		},
 		Rule::pexpr => {
 			parse_expr(pair.into_inner().next().unwrap())
-		}
+		},
+		Rule::expr_tuple => {
+			let exprs = pair.into_inner().map(parse_expr).collect();
+			Expr::Tuple(exprs)
+		},
 		_ => unreachable!(),
 	}
 }
