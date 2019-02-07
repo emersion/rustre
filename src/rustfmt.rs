@@ -34,14 +34,14 @@ impl WriterTo for Expr {
 				write!(w, ")")
 			},
 			Expr::Const(c) => c.write_to(w),
-			Expr::UnopExpr(op, e) => {
+			Expr::Unop(op, e) => {
 				write!(w, "{} ", match op {
 					Unop::Minus | Unop::MinusDot => "-",
 					Unop::Not => "!",
 				})?;
 				e.write_to(w)
 			},
-			Expr::BinopExpr(op, exprs) => {
+			Expr::Binop(op, exprs) => {
 				let (e1, e2): &(Expr, Expr) = &*exprs;
 				e1.write_to(w)?;
 				write!(w, "{} ", match op {

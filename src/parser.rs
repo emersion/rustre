@@ -113,7 +113,7 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			let mut inner_rules = pair.into_inner();
 			let op = parse_unop(inner_rules.next().unwrap());
 			let e = parse_expr(inner_rules.next().unwrap());
-			Expr::UnopExpr(op, Box::new(e))
+			Expr::Unop(op, Box::new(e))
 		},
 		Rule::ifrule => {
 			let mut inner_rules = pair.into_inner();
@@ -127,7 +127,7 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			let e1 = parse_expr(inner_rules.next().unwrap());
 			let binop = parse_binop(inner_rules.next().unwrap());
 			let e2 = parse_expr(inner_rules.next().unwrap());
-			Expr::BinopExpr(binop, Box::new((e1, e2)))
+			Expr::Binop(binop, Box::new((e1, e2)))
 		},
 		Rule::ident => {
 			let id = pair.as_str().to_string();

@@ -51,8 +51,8 @@ pub enum Expr {
 		args: Vec<Expr>,
 	},
 	Const(Const),
-	UnopExpr(Unop, Box<Expr>),
-	BinopExpr(Binop, Box<(Expr, Expr)>),
+	Unop(Unop, Box<Expr>),
+	Binop(Binop, Box<(Expr, Expr)>),
 	If(Box<(Expr, Expr, Expr)>),
 	Ident(String)
 }
