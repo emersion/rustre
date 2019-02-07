@@ -52,6 +52,8 @@ pub enum Expr {
 	},
 	Const(Const),
 	UnopExpr(Unop, Box<Expr>),
+	BinopExpr(Binop, Box<(Expr, Expr)>),
+	If(Box<(Expr, Expr, Expr)>),
 }
 
 #[derive(Debug)]

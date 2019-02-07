@@ -35,6 +35,8 @@ impl WriterTo for Expr {
 			},
 			Expr::Const(c) => c.write_to(w),
 			Expr::UnopExpr(_, _) => unreachable!(), // TODO
+			Expr::BinopExpr(_, _) => unreachable!(), // TODO
+			Expr::If(_) => unreachable!(), // TODO
 		}
 	}
 }

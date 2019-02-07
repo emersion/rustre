@@ -16,12 +16,12 @@ use std::io::stdout;
 pub struct LustreParser;
 
 fn main() {
-	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; j = (); tel";
+	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; j = (); a = if 2 then 1 else 0; tel";
 	let successful_parse = LustreParser::parse(Rule::file, successful_src);
 	println!("{:?}", successful_parse);
 
-	let unsuccessful_parse = LustreParser::parse(Rule::file, "this is not a Lustre program");
-	println!("{:?}", unsuccessful_parse);
+	// let unsuccessful_parse = LustreParser::parse(Rule::file, "this is not a Lustre program");
+	// println!("{:?}", unsuccessful_parse);
 
 	use pest::iterators::Pair;
 
@@ -91,6 +91,28 @@ fn main() {
 		}
 	}
 
+	fn parse_binop(pair: Pair<Rule>) -> Binop {
+		assert!(pair.as_rule() == Rule::binop);
+		match pair.as_str() {
+			"+" => Binop::Plus,
+			"-" => Binop::Minus,
+			"*" => Binop::Mult,
+			"/" => Binop::Div,
+			"+." => Binop::PlusDot,
+			"-." => Binop::MinusDot,
+			"*." => Binop::MultDot,
+			"/." => Binop::DivDot,
+			"<" => Binop::Lt,
+			">" => Binop::Gt,
+			"<=" => Binop::Leq,
+			">=" => Binop::Geq,
+			"=" => Binop::Eq,
+			"and" => Binop::And,
+			"or" => Binop::Or,
+			_ => unreachable!(),
+		}
+	}
+
 	fn parse_expr(pair: Pair<Rule>) -> Expr {
 		match pair.as_rule() {
 			Rule::call => {
@@ -110,6 +132,21 @@ fn main() {
 				let e = parse_expr(inner_rules.next().unwrap());
 				Expr::UnopExpr(op, Box::new(e))
 			},
+			Rule::ifrule => {
+				let mut inner_rules = pair.into_inner();
+				let cond = parse_expr(inner_rules.next().unwrap());
+				let bif = parse_expr(inner_rules.next().unwrap());
+				let belse = parse_expr(inner_rules.next().unwrap());
+				Expr::If(Box::new((cond, bif, belse)))
+			},
+			Rule::binop_expr => {
+				let mut inner_rules = pair.into_inner();
+				let e1 = parse_expr(inner_rules.next().unwrap());
+				let binop = parse_binop(inner_rules.next().unwrap());
+				let e2 = parse_expr(inner_rules.next().unwrap());
+				Expr::BinopExpr(binop, Box::new((e1, e2)))
+			}
+
 			_ => unreachable!(),
 		}
 	}
