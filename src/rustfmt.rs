@@ -36,7 +36,17 @@ impl WriterTo for Expr {
 			Expr::Const(c) => c.write_to(w),
 			Expr::UnopExpr(_, _) => unreachable!(), // TODO
 			Expr::BinopExpr(_, _) => unreachable!(), // TODO
-			Expr::If(_) => unreachable!(), // TODO
+			Expr::If(biff) => {
+				let iff: &(Expr, Expr, Expr) = &*biff;
+				let (cond, body, else_part) = iff;
+				write!(w, "if (")?;
+				cond.write_to(w)?;
+				write!(w, ") {{")?;
+				body.write_to(w)?;
+				write!(w, "}} else {{")?;
+				else_part.write_to(w)?;
+				write!(w, "}}")
+			},
 		}
 	}
 }
