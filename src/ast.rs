@@ -26,6 +26,25 @@ pub enum Unop {
 }
 
 #[derive(Debug)]
+pub enum Binop {
+	Plus,
+	Minus,
+	Mult,
+	Div,
+	PlusDot,
+	MinusDot,
+	MultDot,
+	DivDot,
+	Lt,
+	Gt,
+	Leq,
+	Geq,
+	Eq,
+	And,
+	Or,
+}
+
+#[derive(Debug)]
 pub enum Expr {
 	Call{
 		name: String,

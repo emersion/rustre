@@ -17,10 +17,11 @@ char = {
 	| "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
 }
 constant = { bool | float | int | string | unit }
-unop = { "-" | "-." | "not" }
-op = { "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
+unop = @{ "-" | "-." | "not" }
+op = @{ "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
 	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" }
 unop_expr = { unop ~ expr }
+binop_expr = { expr ~ op ~ expr }
 expr = _{ call | constant | unop_expr }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
