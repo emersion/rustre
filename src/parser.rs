@@ -133,6 +133,9 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			let id = pair.as_str().to_string();
 			Expr::Ident(id)
 		},
+		Rule::pexpr => {
+			parse_expr(pair.into_inner().next().unwrap())
+		}
 		_ => unreachable!(),
 	}
 }
