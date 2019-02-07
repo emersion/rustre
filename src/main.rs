@@ -9,19 +9,18 @@ use pest::Parser;
 use std::collections::HashMap;
 use crate::ast::*;
 use crate::rustfmt::*;
-use std::io::stdout;
+use std::io::{Read, stdout, stdin};
 
 #[derive(Parser)]
 #[grammar = "lustre.pest"]
 pub struct LustreParser;
 
 fn main() {
-	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; j = (); a = if 2 then 1 else 0; tel";
-	let successful_parse = LustreParser::parse(Rule::file, successful_src);
-	eprintln!("{:?}", successful_parse);
+	let mut buffer = String::new();
+	stdin().read_to_string(&mut buffer).unwrap();
 
-	// let unsuccessful_parse = LustreParser::parse(Rule::file, "this is not a Lustre program");
-	// eprintln!("{:?}", unsuccessful_parse);
+	let parsed = LustreParser::parse(Rule::file, &buffer);
+	eprintln!("{:?}", parsed);
 
 	use pest::iterators::Pair;
 
@@ -184,7 +183,7 @@ fn main() {
 		pair.into_inner().map(parse_node).collect()
 	}
 
-	let f = parse_file(successful_parse.unwrap().next().unwrap());
+	let f = parse_file(parsed.unwrap().next().unwrap());
 	eprintln!("{:?}", &f);
 
 	&f.write_to(&mut stdout());
