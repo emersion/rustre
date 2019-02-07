@@ -34,12 +34,34 @@ impl WriterTo for Expr {
 				write!(w, ")")
 			},
 			Expr::Const(c) => c.write_to(w),
-			Expr::UnopExpr(_, _) => unreachable!(), // TODO
-			Expr::BinopExpr(_, _) => unreachable!(), // TODO
-			Expr::Ident(_) => unreachable!(), // TODO
-			Expr::If(biff) => {
-				let iff: &(Expr, Expr, Expr) = &*biff;
-				let (cond, body, else_part) = iff;
+			Expr::UnopExpr(op, e) => {
+				write!(w, "{} ", match op {
+					Unop::Minus | Unop::MinusDot => "-",
+					Unop::Not => "!",
+				})?;
+				e.write_to(w)
+			},
+			Expr::BinopExpr(op, exprs) => {
+				let (e1, e2): &(Expr, Expr) = &*exprs;
+				e1.write_to(w)?;
+				write!(w, "{} ", match op {
+					Binop::Plus | Binop::PlusDot => "+",
+					Binop::Minus | Binop::MinusDot => "-",
+					Binop::Mult | Binop::MultDot => "*",
+					Binop::Div | Binop::DivDot => "/",
+					Binop::Lt => "<",
+					Binop::Gt => ">",
+					Binop::Leq => "<=",
+					Binop::Geq => ">=",
+					Binop::Eq => "==",
+					Binop::And => "&&",
+					Binop::Or => "||",
+				})?;
+				e2.write_to(w)
+			},
+			Expr::Ident(ident) => write!(w, "{}", ident),
+			Expr::If(iff) => {
+				let (cond, body, else_part): &(Expr, Expr, Expr) = &*iff;
 				write!(w, "if (")?;
 				cond.write_to(w)?;
 				write!(w, ") {{")?;
@@ -113,8 +135,11 @@ impl WriterTo for Vec<Node> {
 			&n.write_to(w)?;
 		}
 
+		// Call the last node in main()
 		write!(w, "fn main() {{\n")?;
 		if let Some(n) = self.last() {
+			// Pick some initial values for the node
+			// TODO: we should probably ask these to the user, and run the node in a loop
 			let argv = n.args_in.iter().map(|(_name, typ)| {
 				let c = match typ {
 					Type::Unit => Const::Unit,
