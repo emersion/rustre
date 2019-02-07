@@ -26,7 +26,8 @@ ifrule = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
 pexpr = { "(" ~ expr ~ ")" }
 expr_tuple = { "(" ~ expr ~ ("," ~ expr)+ ~ ")" }
 expr = _{ call | constant | unop_expr | ifrule | ident | expr_tuple | pexpr }
-eq = { ident ~ "=" ~ expr ~ ";" }
+motif = { "(" ~ ident ~ ("," ~ ident)* ~ ")" | ident ~ ("," ~ ident)* }
+eq = { motif ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
 local = { ("var" ~ arg_list ~ ";")? }
 node = {

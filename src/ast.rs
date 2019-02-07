@@ -61,8 +61,8 @@ pub enum Expr {
 
 #[derive(Debug)]
 pub struct Equation {
-	pub name: String,
-	pub value: Expr,
+	pub names: Vec<String>,
+	pub values: Expr,
 }
 
 #[derive(Debug)]

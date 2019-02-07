@@ -73,9 +73,10 @@ impl WriterTo for Expr {
 			},
 			Expr::Tuple(vex) => {
 				match vex.split_first() {
-					Some ((fst, elems)) => {
+					Some((fst, elems)) => {
 						write!(w, "(")?;
 						fst.write_to(w)?;
+						// elems.map(|e| { write!(w, ", ")?; e.write_to(w)? }); Vec not designed that way
 						for e in elems { // skipping #1
 							write!(w, ", ")?;
 							e.write_to(w)?;
@@ -91,8 +92,16 @@ impl WriterTo for Expr {
 
 impl WriterTo for Equation {
 	fn write_to(&self, w: &mut Write) -> Result<()> {
-		write!(w, "\tlet {} = ", &self.name)?;
-		&self.value.write_to(w)?;
+		write!(w, "\tlet ")?;
+		let (fst, elems) = (&self.names).split_first().unwrap();
+		if !elems.is_empty()  { write!(w, "(")?; }
+		write!(w, "{}", fst)?;
+		for e in elems {
+			write!(w, ", {}", e)?;
+		}
+		if !elems.is_empty()  { write!(w, ")")?; }
+		write!(w, " = ")?;
+		&self.values.write_to(w)?;
 		write!(w, ";\n")
 	}
 }

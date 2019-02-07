@@ -147,11 +147,10 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 
 fn parse_eq(pair: Pair<Rule>) -> Equation {
 	assert!(pair.as_rule() == Rule::eq);
-
 	let mut inner_rules = pair.into_inner();
 	Equation{
-		name: inner_rules.next().unwrap().as_str().to_string(),
-		value: parse_expr(inner_rules.next().unwrap()),
+		names: inner_rules.next().unwrap().into_inner().map(|p| p.as_str().to_string()).collect(),
+		values: parse_expr(inner_rules.next().unwrap()),
 	}
 }
 
