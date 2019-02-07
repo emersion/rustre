@@ -18,10 +18,10 @@ pub struct LustreParser;
 fn main() {
 	let successful_src = "node abc() returns (o, p: unit); var q, r : int; let o = print(\"hello world\"); i = 1; j = (); a = if 2 then 1 else 0; tel";
 	let successful_parse = LustreParser::parse(Rule::file, successful_src);
-	println!("{:?}", successful_parse);
+	eprintln!("{:?}", successful_parse);
 
 	// let unsuccessful_parse = LustreParser::parse(Rule::file, "this is not a Lustre program");
-	// println!("{:?}", unsuccessful_parse);
+	// eprintln!("{:?}", unsuccessful_parse);
 
 	use pest::iterators::Pair;
 
@@ -185,7 +185,7 @@ fn main() {
 	}
 
 	let f = parse_file(successful_parse.unwrap().next().unwrap());
-	println!("{:?}", &f);
+	eprintln!("{:?}", &f);
 
 	&f.write_to(&mut stdout());
 }
