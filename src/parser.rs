@@ -130,7 +130,8 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			Expr::BinopExpr(binop, Box::new((e1, e2)))
 		},
 		Rule::ident => {
-			let id = pair.into_inner().next().unwrap().as_str().to_string();
+			let mut inner_rules = pair.into_inner();
+			let id = inner_rules.next().unwrap().as_str().to_string();
 			Expr::Ident(id)
 		},
 		_ => unreachable!(),
