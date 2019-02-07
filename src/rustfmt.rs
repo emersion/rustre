@@ -113,6 +113,24 @@ impl WriterTo for Vec<Node> {
 			&n.write_to(w)?;
 		}
 
-		write!(w, "fn main() {{}}\n")
+		write!(w, "fn main() {{\n")?;
+		if let Some(n) = self.last() {
+			let argv = n.args_in.iter().map(|(_name, typ)| {
+				let c = match typ {
+					Type::Unit => Const::Unit,
+					Type::Int => Const::Int(42),
+					_ => unreachable!(), // TODO
+				};
+				Expr::Const(c)
+			}).collect();
+			let call = Expr::Call{
+				name: n.name.clone(),
+				args: argv,
+			};
+			write!(w, "\t")?;
+			call.write_to(w)?;
+			write!(w, ";\n")?;
+		}
+		write!(w, "}}\n")
 	}
 }
