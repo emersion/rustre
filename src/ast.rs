@@ -54,6 +54,7 @@ pub enum Expr {
 	UnopExpr(Unop, Box<Expr>),
 	BinopExpr(Binop, Box<(Expr, Expr)>),
 	If(Box<(Expr, Expr, Expr)>),
+	Ident(String)
 }
 
 #[derive(Debug)]

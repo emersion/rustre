@@ -23,7 +23,7 @@ binop = @{ "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
 unop_expr = { unop ~ expr }
 binop_expr = { expr ~ binop ~ expr }
 ifrule = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
-expr = _{ call | constant | unop_expr | ifrule }
+expr = _{ call | constant | unop_expr | ifrule | ident }
 eq = { ident ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
 local = { ("var" ~ arg_list ~ ";")? }
