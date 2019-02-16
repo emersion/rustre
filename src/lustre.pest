@@ -18,14 +18,14 @@ char = {
 }
 constant = { bool | float | int | string | unit }
 unop = @{ "-" | "-." | "not" }
-binop = @{ "+" | "-" | "*" | "/" | "+." | "-." | "*." | "/." |
-	"<" | ">" | "<=" | ">=" | "=" | "and" | "or" | "fby" }
+binop = @{ "+." | "-." | "*." | "/." | "+" | "-" | "*" | "/" |
+	"<=" | ">=" | "<" | ">" | "=" | "and" | "or" | "fby" }
 unop_expr = { unop ~ expr }
-binop_expr = { expr ~ binop ~ expr }
+binop_expr = { "(" ~ expr ~ binop ~ expr ~ ")" }
 ifrule = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
 pexpr = { "(" ~ expr ~ ")" }
 expr_tuple = { "(" ~ expr ~ ("," ~ expr)+ ~ ")" }
-expr = _{ call | constant | unop_expr | ifrule | ident | expr_tuple | pexpr }
+expr = _{ call | constant | unop_expr | binop_expr | ifrule | ident | expr_tuple | pexpr }
 motif = { "(" ~ ident ~ ("," ~ ident)* ~ ")" | ident ~ ("," ~ ident)* }
 eq = { motif ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }

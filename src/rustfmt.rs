@@ -45,18 +45,18 @@ impl WriterTo for Expr {
 				let (e1, e2): &(Expr, Expr) = &*exprs;
 				e1.write_to(w)?;
 				write!(w, "{} ", match op {
-					Binop::Plus | Binop::PlusDot => "+",
-					Binop::Minus | Binop::MinusDot => "-",
-					Binop::Mult | Binop::MultDot => "*",
-					Binop::Div | Binop::DivDot => "/",
-					Binop::Lt => "<",
-					Binop::Gt => ">",
-					Binop::Leq => "<=",
-					Binop::Geq => ">=",
-					Binop::Eq => "==",
-					Binop::And => "&&",
-					Binop::Or => "||",
-					Binop::Fby => "fby",
+					Binop::Plus | Binop::PlusDot => " +",
+					Binop::Minus | Binop::MinusDot => " -",
+					Binop::Mult | Binop::MultDot => " *",
+					Binop::Div | Binop::DivDot => " /",
+					Binop::Lt => " <",
+					Binop::Gt => " >",
+					Binop::Leq => " <=",
+					Binop::Geq => " >=",
+					Binop::Eq => " ==",
+					Binop::And => " &&",
+					Binop::Or => " ||",
+					Binop::Fby => " fby",
 				})?;
 				e2.write_to(w)
 			},
