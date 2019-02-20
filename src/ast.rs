@@ -9,7 +9,7 @@ pub enum Type {
 	String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Const {
 	Unit,
 	Bool(bool),
@@ -18,14 +18,14 @@ pub enum Const {
 	String(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Unop {
 	Minus,
 	MinusDot,
 	Not,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Binop {
 	Plus,
 	Minus,

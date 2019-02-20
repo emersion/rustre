@@ -3,6 +3,8 @@ extern crate pest;
 extern crate pest_derive;
 
 mod ast;
+mod nast;
+mod normalizer;
 mod parser;
 mod rustfmt;
 
