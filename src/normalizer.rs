@@ -46,7 +46,7 @@ fn normalize_equation(eq: &ast::Equation) -> Equation {
 	}
 }
 
-pub fn normalize(n: &ast::Node) -> Node {
+fn normalize_node(n: &ast::Node) -> Node {
 	Node{
 		name: n.name.clone(),
 		args_in: n.args_in.clone(),
@@ -54,4 +54,8 @@ pub fn normalize(n: &ast::Node) -> Node {
 		locals: n.locals.clone(),
 		body: n.body.iter().map(normalize_equation).collect(),
 	}
+}
+
+pub fn normalize(f: &[ast::Node]) -> Vec<Node> {
+	f.iter().map(normalize_node).collect()
 }

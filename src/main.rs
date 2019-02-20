@@ -9,8 +9,9 @@ mod parser;
 mod rustfmt;
 
 use std::io::{Read, stdout, stdin};
-use crate::parser::*;
-use crate::rustfmt::*;
+use crate::normalizer::normalize;
+use crate::parser::parse;
+use crate::rustfmt::WriterTo;
 
 fn main() {
 	let mut buffer = String::new();
@@ -19,5 +20,8 @@ fn main() {
 	let f = parse(&buffer).unwrap();
 	eprintln!("{:?}", &f);
 
-	&f.write_to(&mut stdout());
+	let nf = normalize(&f);
+	eprintln!("{:?}", &nf);
+
+	&nf.write_to(&mut stdout()).unwrap();
 }

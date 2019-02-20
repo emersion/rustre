@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Write, Result};
-use crate::ast::*;
+use crate::nast::*;
 
 pub trait WriterTo {
 	fn write_to(&self, w: &mut Write) -> Result<()>;
@@ -14,6 +14,73 @@ impl WriterTo for Const {
 			Const::Int(i) => write!(w, "{}", i),
 			Const::Float(f) => write!(w, "{}", f),
 			Const::String(s) => write!(w, "\"{}\"", s), // TODO: escaping
+		}
+	}
+}
+
+impl WriterTo for Atom {
+	fn write_to(&self, w: &mut Write) -> Result<()> {
+		match self {
+			Atom::Const(c) => c.write_to(w),
+			Atom::Ident(ident) => write!(w, "{}", ident),
+		}
+	}
+}
+
+impl WriterTo for Bexpr {
+	fn write_to(&self, w: &mut Write) -> Result<()> {
+		match self {
+			Bexpr::Unop(op, e) => {
+				write!(w, "{} ", match op {
+					Unop::Minus | Unop::MinusDot => "-",
+					Unop::Not => "!",
+				})?;
+				e.write_to(w)
+			},
+			Bexpr::Binop(op, exprs) => {
+				let (e1, e2): &(Bexpr, Bexpr) = &*exprs;
+				e1.write_to(w)?;
+				write!(w, "{} ", match op {
+					Binop::Plus | Binop::PlusDot => " +",
+					Binop::Minus | Binop::MinusDot => " -",
+					Binop::Mult | Binop::MultDot => " *",
+					Binop::Div | Binop::DivDot => " /",
+					Binop::Lt => " <",
+					Binop::Gt => " >",
+					Binop::Leq => " <=",
+					Binop::Geq => " >=",
+					Binop::Eq => " ==",
+					Binop::And => " &&",
+					Binop::Or => " ||",
+				})?;
+				e2.write_to(w)
+			},
+			Bexpr::If(iff) => {
+				let (cond, body, else_part): &(Bexpr, Bexpr, Bexpr) = &*iff;
+				write!(w, "if (")?;
+				cond.write_to(w)?;
+				write!(w, ") {{")?;
+				body.write_to(w)?;
+				write!(w, "}} else {{")?;
+				else_part.write_to(w)?;
+				write!(w, "}}")
+			},
+			Bexpr::Tuple(vex) => {
+				match vex.split_first() {
+					Some((fst, elems)) => {
+						write!(w, "(")?;
+						fst.write_to(w)?;
+						// elems.map(|e| { write!(w, ", ")?; e.write_to(w)? }); Vec not designed that way
+						for e in elems { // skipping #1
+							write!(w, ", ")?;
+							e.write_to(w)?;
+						}
+						write!(w, ")")
+					},
+					None => unreachable!(),
+				}
+			},
+			Bexpr::Atom(atom) => atom.write_to(w),
 		}
 	}
 }
@@ -33,64 +100,8 @@ impl WriterTo for Expr {
 				}
 				write!(w, ")")
 			},
-			Expr::Const(c) => c.write_to(w),
-			Expr::Unop(op, e) => {
-				write!(w, "{} ", match op {
-					Unop::Minus | Unop::MinusDot => "-",
-					Unop::Not => "!",
-				})?;
-				e.write_to(w)
-			},
-			Expr::Binop(op, exprs) => {
-				let (e1, e2): &(Expr, Expr) = &*exprs;
-				e1.write_to(w)?;
-				write!(w, "{} ", match op {
-					Binop::Plus | Binop::PlusDot => " +",
-					Binop::Minus | Binop::MinusDot => " -",
-					Binop::Mult | Binop::MultDot => " *",
-					Binop::Div | Binop::DivDot => " /",
-					Binop::Lt => " <",
-					Binop::Gt => " >",
-					Binop::Leq => " <=",
-					Binop::Geq => " >=",
-					Binop::Eq => " ==",
-					Binop::And => " &&",
-					Binop::Or => " ||",
-				})?;
-				e2.write_to(w)
-			},
-			Expr::Fby(exprs) => {
-				let (e1, e2): &(Expr, Expr) = &*exprs;
-				e1.write_to(w)?;
-				write!(w, " fby ")?; // TODO
-				e2.write_to(w)
-			},
-			Expr::Ident(ident) => write!(w, "{}", ident),
-			Expr::If(iff) => {
-				let (cond, body, else_part): &(Expr, Expr, Expr) = &*iff;
-				write!(w, "if (")?;
-				cond.write_to(w)?;
-				write!(w, ") {{")?;
-				body.write_to(w)?;
-				write!(w, "}} else {{")?;
-				else_part.write_to(w)?;
-				write!(w, "}}")
-			},
-			Expr::Tuple(vex) => {
-				match vex.split_first() {
-					Some((fst, elems)) => {
-						write!(w, "(")?;
-						fst.write_to(w)?;
-						// elems.map(|e| { write!(w, ", ")?; e.write_to(w)? }); Vec not designed that way
-						for e in elems { // skipping #1
-							write!(w, ", ")?;
-							e.write_to(w)?;
-						}
-						write!(w, ")")
-					},
-					None => unreachable!(),
-				}
-			}
+			Expr::Fby(_, _) => unreachable!(), // TODO
+			Expr::Bexpr(bexp) => bexp.write_to(w),
 		}
 	}
 }
@@ -175,7 +186,7 @@ impl WriterTo for Vec<Node> {
 					Type::Int => Const::Int(42),
 					_ => unreachable!(), // TODO
 				};
-				Expr::Const(c)
+				Bexpr::Atom(Atom::Const(c))
 			}).collect();
 			let call = Expr::Call{
 				name: n.name.clone(),
