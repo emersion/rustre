@@ -62,7 +62,7 @@ pub enum Expr {
 #[derive(Debug)]
 pub struct Equation {
 	pub names: Vec<String>,
-	pub values: Expr,
+	pub body: Expr,
 }
 
 #[derive(Debug)]

@@ -150,7 +150,7 @@ fn parse_eq(pair: Pair<Rule>) -> Equation {
 	let mut inner_rules = pair.into_inner();
 	Equation{
 		names: inner_rules.next().unwrap().into_inner().map(|p| p.as_str().to_string()).collect(),
-		values: parse_expr(inner_rules.next().unwrap()),
+		body: parse_expr(inner_rules.next().unwrap()),
 	}
 }
 

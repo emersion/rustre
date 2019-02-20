@@ -101,7 +101,7 @@ impl WriterTo for Equation {
 		}
 		if !elems.is_empty()  { write!(w, ")")?; }
 		write!(w, " = ")?;
-		&self.values.write_to(w)?;
+		&self.body.write_to(w)?;
 		write!(w, ";\n")
 	}
 }
