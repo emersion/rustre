@@ -1,0 +1,4 @@
+node g() returns (o: int);
+let
+	o = f(f(1));
+tel
