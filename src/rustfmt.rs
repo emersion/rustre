@@ -56,8 +56,13 @@ impl WriterTo for Expr {
 					Binop::Eq => " ==",
 					Binop::And => " &&",
 					Binop::Or => " ||",
-					Binop::Fby => " fby",
 				})?;
+				e2.write_to(w)
+			},
+			Expr::Fby(exprs) => {
+				let (e1, e2): &(Expr, Expr) = &*exprs;
+				e1.write_to(w)?;
+				write!(w, " fby ")?; // TODO
 				e2.write_to(w)
 			},
 			Expr::Ident(ident) => write!(w, "{}", ident),

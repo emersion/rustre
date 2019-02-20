@@ -42,7 +42,6 @@ pub enum Binop {
 	Eq,
 	And,
 	Or,
-	Fby,
 }
 
 #[derive(Debug)]
@@ -54,6 +53,7 @@ pub enum Expr {
 	Const(Const),
 	Unop(Unop, Box<Expr>),
 	Binop(Binop, Box<(Expr, Expr)>),
+	Fby(Box<(Expr, Expr)>),
 	If(Box<(Expr, Expr, Expr)>),
 	Ident(String),
 	Tuple(Vec<Expr>),

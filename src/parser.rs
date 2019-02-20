@@ -74,25 +74,30 @@ fn parse_unop(pair: Pair<Rule>) -> Unop {
 	}
 }
 
-fn parse_binop(pair: Pair<Rule>) -> Binop {
+enum BinopOrFby {
+	Binop(Binop),
+	Fby,
+}
+
+fn parse_binop_or_fby(pair: Pair<Rule>) -> BinopOrFby {
 	assert!(pair.as_rule() == Rule::binop);
 	match pair.as_str() {
-		"+" => Binop::Plus,
-		"-" => Binop::Minus,
-		"*" => Binop::Mult,
-		"/" => Binop::Div,
-		"+." => Binop::PlusDot,
-		"-." => Binop::MinusDot,
-		"*." => Binop::MultDot,
-		"/." => Binop::DivDot,
-		"<" => Binop::Lt,
-		">" => Binop::Gt,
-		"<=" => Binop::Leq,
-		">=" => Binop::Geq,
-		"=" => Binop::Eq,
-		"and" => Binop::And,
-		"or" => Binop::Or,
-		"fby" => Binop::Fby,
+		"+" => BinopOrFby::Binop(Binop::Plus),
+		"-" => BinopOrFby::Binop(Binop::Minus),
+		"*" => BinopOrFby::Binop(Binop::Mult),
+		"/" => BinopOrFby::Binop(Binop::Div),
+		"+." => BinopOrFby::Binop(Binop::PlusDot),
+		"-." => BinopOrFby::Binop(Binop::MinusDot),
+		"*." => BinopOrFby::Binop(Binop::MultDot),
+		"/." => BinopOrFby::Binop(Binop::DivDot),
+		"<" => BinopOrFby::Binop(Binop::Lt),
+		">" => BinopOrFby::Binop(Binop::Gt),
+		"<=" => BinopOrFby::Binop(Binop::Leq),
+		">=" => BinopOrFby::Binop(Binop::Geq),
+		"=" => BinopOrFby::Binop(Binop::Eq),
+		"and" => BinopOrFby::Binop(Binop::And),
+		"or" => BinopOrFby::Binop(Binop::Or),
+		"fby" => BinopOrFby::Fby,
 		_ => unreachable!(),
 	}
 }
@@ -126,9 +131,12 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 		Rule::binop_expr => {
 			let mut inner_rules = pair.into_inner();
 			let e1 = parse_expr(inner_rules.next().unwrap());
-			let binop = parse_binop(inner_rules.next().unwrap());
+			let binop_or_fby = parse_binop_or_fby(inner_rules.next().unwrap());
 			let e2 = parse_expr(inner_rules.next().unwrap());
-			Expr::Binop(binop, Box::new((e1, e2)))
+			match binop_or_fby {
+				BinopOrFby::Binop(binop) => Expr::Binop(binop, Box::new((e1, e2))),
+				BinopOrFby::Fby => Expr::Fby(Box::new((e1, e2))),
+			}
 		},
 		Rule::ident => {
 			let id = pair.as_str().to_string();
