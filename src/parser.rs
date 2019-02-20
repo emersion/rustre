@@ -167,7 +167,7 @@ fn parse_node(pair: Pair<Rule>) -> Node {
 		name: inner_rules.next().unwrap().as_str().to_string(),
 		args_in: parse_arg_list(inner_rules.next().unwrap()),
 		args_out: parse_arg_list(inner_rules.next().unwrap()),
-		local: parse_local(inner_rules.next().unwrap()),
+		locals: parse_local(inner_rules.next().unwrap()),
 		body: parse_eq_list(inner_rules.next().unwrap()),
 	}
 }
