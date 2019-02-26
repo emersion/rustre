@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{Write, Result};
 use crate::nast::*;
+use crate::typer::type_of_const;
 
 pub trait WriterTo {
 	fn write_to(&self, w: &mut Write) -> Result<()>;
@@ -122,6 +123,16 @@ impl WriterTo for Equation {
 	}
 }
 
+fn get_type(t: Type) -> &'static str {
+	match t {
+		Type::Unit => "()",
+		Type::Bool => "bool",
+		Type::Int => "i32",
+		Type::Float => "f32",
+		Type::String => "String",
+	}
+}
+
 fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool, with_typ: bool) -> Result<()> {
 	let mut first = true;
 	for (name, typ) in args {
@@ -132,13 +143,7 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 			write!(w, ": ")?;
 		}
 		if with_typ {
-			write!(w, "{}", match typ {
-				Type::Unit => "()",
-				Type::Bool => "bool",
-				Type::Int => "i32",
-				Type::Float => "f32",
-				Type::String => "String",
-			})?;
+			write!(w, "{}", get_type(*typ))?;
 		}
 		if !first {
 			write!(w, ", ")?;
@@ -148,8 +153,45 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 	Ok(())
 }
 
+fn capitalize(s: &str) -> String {
+	let mut c = s.chars();
+	match c.next() {
+		None => String::new(),
+		Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+	}
+}
+
+fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, Type>) -> Result<()> {
+	write!(w, "struct Mem{} {{\n", capitalize(name))?;
+	for (k, t) in fields {
+		write!(w, "\t{}: {},\n", k, get_type(*t))?;
+	}
+	write!(w, "}}\n\n")
+}
+
+fn get_node_mem(n: &Node) -> HashMap<String, Type> {
+	let mut mem = HashMap::new();
+	for eq in n.body.iter() {
+		if let Expr::Fby(init, _) = &eq.body {
+			// TODO: support tuples
+			assert!(eq.names.len() == 1);
+			let t = match &init[0] {
+				Atom::Const(c) => type_of_const(c),
+				Atom::Ident(_) => unreachable!(),
+			};
+			mem.insert(eq.names[0].clone(), t);
+		}
+	}
+	mem
+}
+
 impl WriterTo for Node {
 	fn write_to(&self, w: &mut Write) -> Result<()> {
+		let mem = get_node_mem(self);
+		if mem.len() > 0 {
+			format_struct(w, &self.name, &mem)?;
+		}
+
 		write!(w, "fn {}(", &self.name)?;
 		format_arg_list(w, &self.args_in, true, true)?;
 		write!(w, ") -> (")?;

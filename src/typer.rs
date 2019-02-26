@@ -2,15 +2,19 @@ use crate::nast::*;
 
 // TODO: this doesn't perform type checking
 
+pub fn type_of_const(c: &Const) -> Type {
+	match c {
+		Const::Unit => Type::Unit,
+		Const::Bool(_) => Type::Bool,
+		Const::Int(_) => Type::Int,
+		Const::Float(_) => Type::Float,
+		Const::String(_) => Type::String,
+	}
+}
+
 fn type_of_atom(a: &Atom) -> Type {
 	match a {
-		Atom::Const(c) => match c {
-			Const::Unit => Type::Unit,
-			Const::Bool(_) => Type::Bool,
-			Const::Int(_) => Type::Int,
-			Const::Float(_) => Type::Float,
-			Const::String(_) => Type::String,
-		},
+		Atom::Const(c) => type_of_const(c),
 		Atom::Ident(_) => unreachable!(), // TODO
 	}
 }
