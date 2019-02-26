@@ -7,6 +7,7 @@ mod nast;
 mod normalizer;
 mod parser;
 mod rustfmt;
+mod typer;
 
 use std::io::{Read, stdout, stdin};
 use crate::normalizer::normalize;
