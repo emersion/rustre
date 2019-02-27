@@ -79,11 +79,10 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
-			let mut first = true;
 			if let Some(_) = mems.get(name) {
 				write!(w, "&mem.{}, ", dest)?;
-				first = false;
 			}
+			let mut first = true;
 			for arg in args {
 				format_bexpr(w, arg)?;
 				if !first {
@@ -93,7 +92,9 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 			}
 			write!(w, ")")
 		},
-		Expr::Fby(_, _) => unreachable!(), // TODO
+		Expr::Fby(_, _) => {
+			write!(w, "mem.{}", dest)
+		},
 		Expr::Bexpr(bexpr) => format_bexpr(w, bexpr),
 	}
 }
