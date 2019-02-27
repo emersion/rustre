@@ -110,12 +110,7 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	if !elems.is_empty() {
 		write!(w, "(")?;
 	}
-	if fst == "" {
-		// Used for main()
-		write!(w, "_")?;
-	} else {
-		write!(w, "{}", fst)?;
-	}
+	write!(w, "{}", fst)?;
 	for e in elems {
 		write!(w, ", {}", e)?;
 	}
@@ -310,10 +305,15 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			write!(w, "\tlet mut mem: {} = Default::default();\n", &call_mem.name)?;
 		}
 
-		format_equation(w, &Equation{
-			names: vec!("".to_string()),
-			body: call,
-		}, &mems)?;
+		write!(w, "\tfor _ in 0..10 {{\n")?;
+
+		write!(w, "\t\tlet v = ")?;
+		format_expr(w, &call, "", &mems)?;
+		write!(w, ";\n")?;
+
+		write!(w, "\t\teprintln!(\"{{:?}}\", &v);\n")?;
+
+		write!(w, "\t}}\n")?;
 	}
 	write!(w, "}}\n")
 }
