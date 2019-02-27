@@ -93,7 +93,7 @@ fn format_expr(
     match e {
         Expr::Call { name, args } => {
             write!(w, "{}(", name)?;
-            if let Some(_) = mems.get(name) {
+            if mems.get(name).is_some() {
                 if dest == "" {
                     // Used in main()
                     write!(w, "&mut mem, ")?;
@@ -132,7 +132,7 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
     write!(w, " = ")?;
     // TODO: support tuples
     format_expr(w, &eq.body, fst, mems)?;
-    write!(w, ";\n")
+    writeln!(w, ";")
 }
 
 fn get_type(t: Type) -> &'static str {
@@ -184,26 +184,26 @@ fn format_struct(
     fields: &HashMap<String, String>,
     init_values: &HashMap<String, Const>,
 ) -> Result<()> {
-    write!(w, "#[derive(Debug)]\n")?;
-    write!(w, "struct {} {{\n", name)?;
+    writeln!(w, "#[derive(Debug)]")?;
+    writeln!(w, "struct {} {{", name)?;
     for (k, t) in fields {
-        write!(w, "\t{}: {},\n", k, t)?;
+        writeln!(w, "\t{}: {},", k, t)?;
     }
     write!(w, "}}\n\n")?;
 
-    write!(w, "impl Default for {} {{\n", name)?;
-    write!(w, "\tfn default() -> Self {{\n")?;
-    write!(w, "\t\tSelf{{\n")?;
-    for (k, _) in fields {
+    writeln!(w, "impl Default for {} {{", name)?;
+    writeln!(w, "\tfn default() -> Self {{")?;
+    writeln!(w, "\t\tSelf{{")?;
+    for k in fields.keys() {
         write!(w, "\t\t\t{}: ", k)?;
         match init_values.get(k) {
             Some(c) => format_const(w, c)?,
             None => write!(w, "Default::default()")?,
         }
-        write!(w, ",\n")?;
+        writeln!(w, ",")?;
     }
-    write!(w, "\t\t}}\n")?;
-    write!(w, "\t}}\n")?;
+    writeln!(w, "\t\t}}")?;
+    writeln!(w, "\t}}")?;
     write!(w, "}}\n\n")
 }
 
@@ -224,7 +224,7 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
         let dest = &eq.names[0];
 
         match &eq.body {
-            Expr::Call { name, args: _ } => {
+            Expr::Call { name, .. } => {
                 if let Some(call_mem) = mems.get(name) {
                     fields.insert(dest.clone(), call_mem.name.clone());
                 }
@@ -245,14 +245,14 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
         }
     }
 
-    if fields.len() == 0 {
+    if fields.is_empty() {
         None
     } else {
         Some(NodeMemory {
             name: format!("Mem{}", capitalize(&n.name)),
-            fields: fields,
-            init_values: init_values,
-            next_values: next_values,
+            fields,
+            init_values,
+            next_values,
         })
     }
 }
@@ -270,7 +270,7 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
     format_arg_list(w, &n.args_in, true, true)?;
     write!(w, ") -> (")?;
     format_arg_list(w, &n.args_out, false, true)?;
-    write!(w, ") {{\n")?;
+    writeln!(w, ") {{")?;
     for eq in &n.body {
         format_equation(w, eq, mems)?;
     }
@@ -279,19 +279,19 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
         for (k, v) in &mem.next_values {
             write!(w, "\tmem.{} = ", k)?;
             format_expr(w, v, "_", mems)?;
-            write!(w, ";\n")?;
+            writeln!(w, ";")?;
         }
     }
 
     write!(w, "\treturn (")?;
     format_arg_list(w, &n.args_out, true, false)?;
-    write!(w, ");\n")?;
+    writeln!(w, ");")?;
     write!(w, "}}\n\n")
 }
 
 pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
-    write!(w, "fn print(s: &str) {{\n")?;
-    write!(w, "\tprintln!(\"{{}}\", s);\n")?;
+    writeln!(w, "fn print(s: &str) {{")?;
+    writeln!(w, "\tprintln!(\"{{}}\", s);")?;
     write!(w, "}}\n\n")?;
 
     let mut mems = HashMap::new();
@@ -306,7 +306,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
     }
 
     // Call the last node in main()
-    write!(w, "fn main() {{\n");
+    writeln!(w, "fn main() {{")?;
     if let Some(n) = f.last() {
         // Pick some initial values for the node
         // TODO: we should probably ask these to the user, and run the node in a loop
@@ -328,22 +328,18 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
         };
 
         if let Some(call_mem) = mems.get(&n.name) {
-            write!(
-                w,
-                "\tlet mut mem: {} = Default::default();\n",
-                &call_mem.name
-            )?;
+            writeln!(w, "\tlet mut mem: {} = Default::default();", &call_mem.name)?;
         }
 
-        write!(w, "\tfor _ in 0..10 {{\n")?;
+        writeln!(w, "\tfor _ in 0..10 {{")?;
 
         write!(w, "\t\tlet v = ")?;
         format_expr(w, &call, "", &mems)?;
-        write!(w, ";\n")?;
+        writeln!(w, ";")?;
 
-        write!(w, "\t\teprintln!(\"{{:?}}\", &v);\n")?;
+        writeln!(w, "\t\teprintln!(\"{{:?}}\", &v);")?;
 
-        write!(w, "\t}}\n")?;
+        writeln!(w, "\t}}")?;
     }
-    write!(w, "}}\n")
+    writeln!(w, "}}")
 }

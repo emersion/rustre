@@ -28,13 +28,11 @@ fn normalize_atom(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> A
 
 fn normalize_bexpr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> Bexpr {
     match e {
-        ast::Expr::Unop(unop, e) => {
-            Bexpr::Unop(unop.clone(), Box::new(normalize_bexpr(e, intermediates)))
-        }
+        ast::Expr::Unop(unop, e) => Bexpr::Unop(*unop, Box::new(normalize_bexpr(e, intermediates))),
         ast::Expr::Binop(binop, exprs) => {
             let (e1, e2): &(ast::Expr, ast::Expr) = &*exprs;
             Bexpr::Binop(
-                binop.clone(),
+                *binop,
                 Box::new((
                     normalize_bexpr(e1, intermediates),
                     normalize_bexpr(e2, intermediates),
@@ -114,8 +112,8 @@ fn normalize_node(n: &ast::Node) -> Node {
         name: n.name.clone(),
         args_in: n.args_in.clone(),
         args_out: n.args_out.clone(),
-        locals: locals,
-        body: body,
+        locals,
+        body,
     }
 }
 

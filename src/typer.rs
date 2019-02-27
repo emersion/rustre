@@ -48,8 +48,8 @@ fn type_of_bexpr(e: &Bexpr) -> Type {
 
 pub fn type_of(e: &Expr) -> Type {
     match e {
-        Expr::Call { name: _, args: _ } => unreachable!(), // TODO
-        Expr::Fby(_, _) => unreachable!(),                 // TODO
+        Expr::Call { .. } => unreachable!(), // TODO
+        Expr::Fby(_, _) => unreachable!(),   // TODO
         Expr::Bexpr(bexp) => type_of_bexpr(bexp),
     }
 }

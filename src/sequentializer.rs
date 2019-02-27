@@ -27,7 +27,7 @@ fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
         Bexpr::Tuple(vexpr) => {
             // may be improved in some cases
             let v = vexpr.iter().map(find_dep_bexpr);
-            v.into_iter().flatten().collect()
+            v.flatten().collect()
         }
         Bexpr::Atom(a) => find_dep_atom(a),
     }
@@ -37,16 +37,16 @@ fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
 fn find_dep_eq(e: &Equation) -> Vec<String> {
     match &e.body {
         Expr::Bexpr(be) => find_dep_bexpr(&be),
-        Expr::Call { name: _, args } => {
+        Expr::Call { args, .. } => {
             let v = args.iter().map(find_dep_bexpr);
-            v.into_iter().flatten().collect()
+            v.flatten().collect()
         }
         Expr::Fby(vexpr1, vexpr2) => {
             if vexpr1.len() != vexpr2.len() {
                 panic!("Expected same tuple size on fby")
             }
             let v = vexpr1.iter().map(find_dep_atom);
-            v.into_iter().flatten().collect()
+            v.flatten().collect()
         }
     }
 }
