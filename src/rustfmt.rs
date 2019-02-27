@@ -132,7 +132,7 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	write!(w, " = ")?;
 	// TODO: support tuples
 	format_expr(w, &eq.body, fst, mems)?;
-	writeln!(w, ";")
+	write!(w, ";\n")
 }
 
 fn get_type(t: Type) -> &'static str {
@@ -184,26 +184,26 @@ fn format_struct(
 	fields: &HashMap<String, String>,
 	init_values: &HashMap<String, Const>,
 ) -> Result<()> {
-	writeln!(w, "#[derive(Debug)]")?;
-	writeln!(w, "struct {} {{", name)?;
+	write!(w, "#[derive(Debug)]\n")?;
+	write!(w, "struct {} {{\n", name)?;
 	for (k, t) in fields {
-		writeln!(w, "\t{}: {},", k, t)?;
+		write!(w, "\t{}: {},\n", k, t)?;
 	}
 	write!(w, "}}\n\n")?;
 
-	writeln!(w, "impl Default for {} {{", name)?;
-	writeln!(w, "\tfn default() -> Self {{")?;
-	writeln!(w, "\t\tSelf{{")?;
+	write!(w, "impl Default for {} {{\n", name)?;
+	write!(w, "\tfn default() -> Self {{\n")?;
+	write!(w, "\t\tSelf{{\n")?;
 	for k in fields.keys() {
 		write!(w, "\t\t\t{}: ", k)?;
 		match init_values.get(k) {
 			Some(c) => format_const(w, c)?,
 			None => write!(w, "Default::default()")?,
 		}
-		writeln!(w, ",")?;
+		write!(w, ",\n")?;
 	}
-	writeln!(w, "\t\t}}")?;
-	writeln!(w, "\t}}")?;
+	write!(w, "\t\t}}\n")?;
+	write!(w, "\t}}\n")?;
 	write!(w, "}}\n\n")
 }
 
@@ -270,7 +270,7 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 	format_arg_list(w, &n.args_in, true, true)?;
 	write!(w, ") -> (")?;
 	format_arg_list(w, &n.args_out, false, true)?;
-	writeln!(w, ") {{")?;
+	write!(w, ") {{\n")?;
 	for eq in &n.body {
 		format_equation(w, eq, mems)?;
 	}
@@ -279,19 +279,19 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 		for (k, v) in &mem.next_values {
 			write!(w, "\tmem.{} = ", k)?;
 			format_expr(w, v, "_", mems)?;
-			writeln!(w, ";")?;
+			write!(w, ";\n")?;
 		}
 	}
 
 	write!(w, "\treturn (")?;
 	format_arg_list(w, &n.args_out, true, false)?;
-	writeln!(w, ");")?;
+	write!(w, ");\n")?;
 	write!(w, "}}\n\n")
 }
 
 pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
-	writeln!(w, "fn print(s: &str) {{")?;
-	writeln!(w, "\tprintln!(\"{{}}\", s);")?;
+	write!(w, "fn print(s: &str) {{\n")?;
+	write!(w, "\tprintln!(\"{{}}\", s);\n")?;
 	write!(w, "}}\n\n")?;
 
 	let mut mems = HashMap::new();
@@ -306,7 +306,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	}
 
 	// Call the last node in main()
-	writeln!(w, "fn main() {{")?;
+	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
 		// Pick some initial values for the node
 		// TODO: we should probably ask these to the user, and run the node in a loop
@@ -328,18 +328,22 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 		};
 
 		if let Some(call_mem) = mems.get(&n.name) {
-			writeln!(w, "\tlet mut mem: {} = Default::default();", &call_mem.name)?;
+			write!(
+				w,
+				"\tlet mut mem: {} = Default::default();\n",
+				&call_mem.name
+			)?;
 		}
 
-		writeln!(w, "\tfor _ in 0..10 {{")?;
+		write!(w, "\tfor _ in 0..10 {{\n")?;
 
 		write!(w, "\t\tlet v = ")?;
 		format_expr(w, &call, "", &mems)?;
-		writeln!(w, ";")?;
+		write!(w, ";\n")?;
 
-		writeln!(w, "\t\teprintln!(\"{{:?}}\", &v);")?;
+		write!(w, "\t\teprintln!(\"{{:?}}\", &v);\n")?;
 
-		writeln!(w, "\t}}")?;
+		write!(w, "\t}}\n")?;
 	}
-	writeln!(w, "}}")
+	write!(w, "}}\n")
 }
