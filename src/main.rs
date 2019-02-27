@@ -12,7 +12,7 @@ mod sequentializer;
 
 use std::io::{Read, stdout, stdin};
 use crate::parser::parse;
-use crate::rustfmt::WriterTo;
+use crate::rustfmt::format;
 use crate::normalizer::normalize;
 use crate::sequentializer::sequentialize;
 
@@ -29,5 +29,5 @@ fn main() {
 	let sf = sequentialize(&nf);
 	eprintln!("{:?}", &sf);
 
-	&sf.write_to(&mut stdout()).unwrap();
+	format(&mut stdout(), &sf).unwrap();
 }
