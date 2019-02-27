@@ -208,8 +208,9 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 
 		match &eq.body {
 			Expr::Call{name, args: _} => {
-				let call_mem = mems.get(name).unwrap();
-				fields.insert(dest.clone(), call_mem.name.clone());
+				if let Some(call_mem) = mems.get(name) {
+					fields.insert(dest.clone(), call_mem.name.clone());
+				}
 			},
 			Expr::Fby(init, next) => {
 				// TODO: support tuples
