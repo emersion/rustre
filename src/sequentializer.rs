@@ -50,7 +50,7 @@ fn find_dep_eq(e: &Equation) -> Vec<String> {
 	}
 }
 
-// propagates the dependencies for each equations
+// propagates the dependencies for each equation
 fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>> {
 	let mut finaldeps = HashMap::new();
 
@@ -59,14 +59,14 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 		let mut alldeps = vec!{};
 
 		// while the queue [todo] is not empty
-		while !(todo.is_empty()) {
+		while !todo.is_empty() {
 			let d = todo.pop_front().unwrap();
 			if deps.contains_key(&d) {
 				let values = deps.get(&d).unwrap();
 				for dnext in values {
 					// don't add if already done or to be done
 					if !alldeps.contains(dnext) && !todo.contains(dnext) {
-						println!("alldeps doesn't contain {}",dnext);
+						eprintln!("alldeps doesn't contain {}", dnext);
 						todo.push_back(dnext.to_string()); // add the dependecies
 					}
 				}
@@ -77,6 +77,7 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 		}
 		finaldeps.insert(key.to_string(), alldeps);
 	}
+
 	finaldeps
 }
 
@@ -93,15 +94,15 @@ fn sequentialize_node(n: &Node) -> Node {
 		}
 	}
 
-	for (k,v) in &deps {
-		println!("{} / {:?}", k, v)
+	for (k, v) in &deps {
+		eprintln!("{} / {:?}", k, v)
 	}
 
 	let alldeps = propagate(&deps);
 
-	println!("PROPAGATED");
-	for (k,v) in alldeps {
-		println!("{} / {:?}", k, v)
+	eprintln!("PROPAGATED");
+	for (k, v) in alldeps {
+		eprintln!("{} / {:?}", k, v)
 	}
 
 	// TODO: Resolve dependencies
