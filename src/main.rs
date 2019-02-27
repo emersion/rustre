@@ -17,17 +17,17 @@ use crate::sequentializer::sequentialize;
 use std::io::{stdin, stdout, Read};
 
 fn main() {
-    let mut buffer = String::new();
-    stdin().read_to_string(&mut buffer).unwrap();
+	let mut buffer = String::new();
+	stdin().read_to_string(&mut buffer).unwrap();
 
-    let f = parse(&buffer).unwrap();
-    eprintln!("{:?}", &f);
+	let f = parse(&buffer).unwrap();
+	eprintln!("{:?}", &f);
 
-    let nf = normalize(&f);
-    eprintln!("{:?}", &nf);
+	let nf = normalize(&f);
+	eprintln!("{:?}", &nf);
 
-    let sf = sequentialize(&nf);
-    eprintln!("{:?}", &sf);
+	let sf = sequentialize(&nf);
+	eprintln!("{:?}", &sf);
 
-    format(&mut stdout(), &sf).unwrap();
+	format(&mut stdout(), &sf).unwrap();
 }
