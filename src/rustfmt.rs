@@ -80,7 +80,12 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
 			if let Some(_) = mems.get(name) {
-				write!(w, "&mem.{}, ", dest)?;
+				if dest == "" {
+					// Used in main()
+					write!(w, "&mut mem, ")?;
+				} else {
+					write!(w, "&mut mem.{}, ", dest)?;
+				}
 			}
 			let mut first = true;
 			for arg in args {
@@ -102,12 +107,21 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	write!(w, "\tlet ")?;
 	let (fst, elems) = (&eq.names).split_first().unwrap();
-	if !elems.is_empty()  { write!(w, "(")?; }
-	write!(w, "{}", fst)?;
+	if !elems.is_empty() {
+		write!(w, "(")?;
+	}
+	if fst == "" {
+		// Used for main()
+		write!(w, "_")?;
+	} else {
+		write!(w, "{}", fst)?;
+	}
 	for e in elems {
 		write!(w, ", {}", e)?;
 	}
-	if !elems.is_empty()  { write!(w, ")")?; }
+	if !elems.is_empty() {
+		write!(w, ")")?;
+	}
 	write!(w, " = ")?;
 	// TODO: support tuples
 	format_expr(w, &eq.body, fst, mems)?;
@@ -226,13 +240,13 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 }
 
 fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> Result<()> {
-	let mem = mems.get(&n.name).unwrap();
-	if mem.fields.len() > 0 {
+	let mem = mems.get(&n.name);
+	if let Some(mem) = mem {
 		format_struct(w, &mem.name, &mem.fields, &mem.init_values)?;
 	}
 
 	write!(w, "fn {}(", &n.name)?;
-	if mem.fields.len() > 0 {
+	if let Some(mem) = mem {
 		write!(w, "mem: &mut {}, ", &mem.name)?;
 	}
 	format_arg_list(w, &n.args_in, true, true)?;
@@ -242,6 +256,15 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 	for eq in &n.body {
 		format_equation(w, eq, mems)?;
 	}
+
+	if let Some(mem) = mem {
+		for (k, v) in &mem.next_values {
+			write!(w, "\tmem.{} = ", k)?;
+			format_expr(w, v, "_", mems)?;
+			write!(w, ";\n")?;
+		}
+	}
+
 	write!(w, "\treturn (")?;
 	format_arg_list(w, &n.args_out, true, false)?;
 	write!(w, ");\n")?;
@@ -265,7 +288,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	}
 
 	// Call the last node in main()
-	write!(w, "fn main() {{\n")?;
+	write!(w, "fn main() {{\n");
 	if let Some(n) = f.last() {
 		// Pick some initial values for the node
 		// TODO: we should probably ask these to the user, and run the node in a loop
@@ -281,9 +304,15 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			name: n.name.clone(),
 			args: argv,
 		};
-		write!(w, "\t")?;
-		format_expr(w, &call, "_", &mems)?;
-		write!(w, ";\n")?;
+
+		if let Some(call_mem) = mems.get(&n.name) {
+			write!(w, "\tlet mut mem: {} = Default::default();\n", &call_mem.name)?;
+		}
+
+		format_equation(w, &Equation{
+			names: vec!("".to_string()),
+			body: call,
+		}, &mems)?;
 	}
 	write!(w, "}}\n")
 }
