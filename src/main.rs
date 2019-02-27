@@ -8,11 +8,13 @@ mod normalizer;
 mod parser;
 mod rustfmt;
 mod typer;
+mod sequentializer;
 
 use std::io::{Read, stdout, stdin};
-use crate::normalizer::normalize;
 use crate::parser::parse;
 use crate::rustfmt::WriterTo;
+use crate::normalizer::normalize;
+use crate::sequentializer::sequentialize;
 
 fn main() {
 	let mut buffer = String::new();
@@ -24,5 +26,8 @@ fn main() {
 	let nf = normalize(&f);
 	eprintln!("{:?}", &nf);
 
-	&nf.write_to(&mut stdout()).unwrap();
+	let sf = sequentialize(&nf);
+	eprintln!("{:?}", &sf);
+
+	&sf.write_to(&mut stdout()).unwrap();
 }
