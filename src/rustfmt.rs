@@ -152,38 +152,62 @@ fn capitalize(s: &str) -> String {
 	}
 }
 
-fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>) -> Result<()> {
-	write!(w, "#[derive(Debug, Default)]\n")?;
+fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, init_values: &HashMap<String, Const>) -> Result<()> {
+	write!(w, "#[derive(Debug)]\n")?;
 	write!(w, "struct {} {{\n", name)?;
 	for (k, t) in fields {
 		write!(w, "\t{}: {},\n", k, t)?;
 	}
+	write!(w, "}}\n\n")?;
+
+	write!(w, "impl Default for {} {{\n", name)?;
+	write!(w, "\tfn default() -> Self {{\n")?;
+	write!(w, "\t\tSelf{{\n")?;
+	for (k, _) in fields {
+		write!(w, "\t\t\t{}: ", k)?;
+		match init_values.get(k) {
+			Some(c) => format_const(w, c)?,
+			None => write!(w, "Default::default()")?,
+		}
+		write!(w, ",\n")?;
+	}
+	write!(w, "\t\t}}\n")?;
+	write!(w, "\t}}\n")?;
 	write!(w, "}}\n\n")
 }
 
 struct NodeMemory {
 	name: String,
 	fields: HashMap<String, String>,
+	init_values: HashMap<String, Const>,
+	next_values: HashMap<String, Expr>,
 }
 
 fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemory> {
 	let mut fields = HashMap::new();
+	let mut init_values = HashMap::new();
+	let mut next_values = HashMap::new();
 	for eq in n.body.iter() {
+		// TODO: support tuples
+		assert!(eq.names.len() == 1);
+		let dest = &eq.names[0];
+
 		match &eq.body {
 			Expr::Call{name, args: _} => {
-				// TODO: support tuples
-				assert!(eq.names.len() == 1);
 				let call_mem = mems.get(name).unwrap();
-				fields.insert(eq.names[0].clone(), call_mem.name.clone());
+				fields.insert(dest.clone(), call_mem.name.clone());
 			},
-			Expr::Fby(init, _) => {
+			Expr::Fby(init, next) => {
 				// TODO: support tuples
-				assert!(eq.names.len() == 1);
-				let t = match &init[0] {
-					Atom::Const(c) => type_of_const(c),
+				let (init, next) = (&init[0], &next[0]);
+				let init = match init {
+					Atom::Const(c) => c,
 					Atom::Ident(_) => unreachable!(),
 				};
-				fields.insert(eq.names[0].clone(), get_type(t).to_string());
+				let t = type_of_const(init);
+				init_values.insert(dest.clone(), init.clone());
+				next_values.insert(dest.clone(), next.clone());
+				fields.insert(dest.clone(), get_type(t).to_string());
 			},
 			_ => {},
 		}
@@ -195,6 +219,8 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 		Some(NodeMemory{
 			name: format!("Mem{}", capitalize(&n.name)),
 			fields: fields,
+			init_values: init_values,
+			next_values: next_values,
 		})
 	}
 }
@@ -202,7 +228,7 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	let mem = mems.get(&n.name).unwrap();
 	if mem.fields.len() > 0 {
-		format_struct(w, &mem.name, &mem.fields)?;
+		format_struct(w, &mem.name, &mem.fields, &mem.init_values)?;
 	}
 
 	write!(w, "fn {}(", &n.name)?;

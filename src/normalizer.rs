@@ -51,7 +51,7 @@ fn normalize_expr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> E
 		ast::Expr::Fby(fby) => {
 			let (e1, e2): &(ast::Expr, ast::Expr) = &*fby;
 			// TODO: extract tuples
-			Expr::Fby(vec!(normalize_atom(e1, intermediates)), vec!(normalize_atom(e2, intermediates)))
+			Expr::Fby(vec!(normalize_atom(e1, intermediates)), vec!(normalize_expr(e2, intermediates)))
 		},
 		_ => Expr::Bexpr(normalize_bexpr(e, intermediates)),
 	}
