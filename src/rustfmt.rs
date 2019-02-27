@@ -75,11 +75,15 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 	}
 }
 
-fn format_expr(w: &mut Write, e: &Expr) -> Result<()> {
+fn format_expr(w: &mut Write, e: &Expr, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
 			let mut first = true;
+			if let Some(mem) = mems.get(name) {
+				unreachable!(); // TODO
+				first = false;
+			}
 			for arg in args {
 				format_bexpr(w, arg)?;
 				if !first {
@@ -94,7 +98,7 @@ fn format_expr(w: &mut Write, e: &Expr) -> Result<()> {
 	}
 }
 
-fn format_equation(w: &mut Write, eq: &Equation) -> Result<()> {
+fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	write!(w, "\tlet ")?;
 	let (fst, elems) = (&eq.names).split_first().unwrap();
 	if !elems.is_empty()  { write!(w, "(")?; }
@@ -104,7 +108,7 @@ fn format_equation(w: &mut Write, eq: &Equation) -> Result<()> {
 	}
 	if !elems.is_empty()  { write!(w, ")")?; }
 	write!(w, " = ")?;
-	format_expr(w, &eq.body)?;
+	format_expr(w, &eq.body, mems)?;
 	write!(w, ";\n")
 }
 
@@ -160,7 +164,7 @@ struct NodeMemory {
 	fields: HashMap<String, Type>,
 }
 
-fn get_node_mem(n: &Node) -> NodeMemory {
+fn get_node_mem(n: &Node) -> Option<NodeMemory> {
 	let mut fields = HashMap::new();
 	for eq in n.body.iter() {
 		if let Expr::Fby(init, _) = &eq.body {
@@ -173,14 +177,19 @@ fn get_node_mem(n: &Node) -> NodeMemory {
 			fields.insert(eq.names[0].clone(), t);
 		}
 	}
-	NodeMemory{
-		name: format!("Mem{}", capitalize(&n.name)),
-		fields: fields,
+
+	if fields.len() == 0 {
+		None
+	} else {
+		Some(NodeMemory{
+			name: format!("Mem{}", capitalize(&n.name)),
+			fields: fields,
+		})
 	}
 }
 
-fn format_node(w: &mut Write, n: &Node) -> Result<()> {
-	let mem = get_node_mem(n);
+fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> Result<()> {
+	let mem = mems.get(&n.name).unwrap();
 	if mem.fields.len() > 0 {
 		format_struct(w, &mem.name, &mem.fields)?;
 	}
@@ -194,7 +203,7 @@ fn format_node(w: &mut Write, n: &Node) -> Result<()> {
 	format_arg_list(w, &n.args_out, false, true)?;
 	write!(w, ") {{\n")?;
 	for eq in &n.body {
-		format_equation(w, eq)?;
+		format_equation(w, eq, mems)?;
 	}
 	write!(w, "\treturn (")?;
 	format_arg_list(w, &n.args_out, true, false)?;
@@ -207,8 +216,15 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	write!(w, "\tprintln!(\"{{}}\", s);\n")?;
 	write!(w, "}}\n\n")?;
 
+	let mut mems = HashMap::new();
 	for n in f {
-		format_node(w, n)?;
+		if let Some(mem) = get_node_mem(n) {
+			mems.insert(n.name.clone(), mem);
+		}
+	}
+
+	for n in f {
+		format_node(w, n, &mems)?;
 	}
 
 	// Call the last node in main()
@@ -229,7 +245,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			args: argv,
 		};
 		write!(w, "\t")?;
-		format_expr(w, &call)?;
+		format_expr(w, &call, &mems)?;
 		write!(w, ";\n")?;
 	}
 	write!(w, "}}\n")
