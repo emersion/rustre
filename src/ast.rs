@@ -44,7 +44,7 @@ pub enum Binop {
 	Or,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
 	Call{
 		name: String,
@@ -59,13 +59,13 @@ pub enum Expr {
 	Tuple(Vec<Expr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Equation {
 	pub names: Vec<String>,
 	pub body: Expr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
 	pub name: String,
 	pub args_in: HashMap<String, Type>,

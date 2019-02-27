@@ -3,13 +3,13 @@
 use std::collections::HashMap;
 pub use crate::ast::{Type, Const, Unop, Binop};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Atom {
 	Ident(String),
 	Const(Const),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Bexpr {
 	Atom(Atom),
 	Unop(Unop, Box<Bexpr>),
@@ -18,7 +18,7 @@ pub enum Bexpr {
 	Tuple(Vec<Bexpr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
 	Bexpr(Bexpr),
 	Call{
@@ -28,13 +28,13 @@ pub enum Expr {
 	Fby(Vec<Atom>, Vec<Atom>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Equation {
 	pub names: Vec<String>,
 	pub body: Expr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
 	pub name: String,
 	pub args_in: HashMap<String, Type>,
