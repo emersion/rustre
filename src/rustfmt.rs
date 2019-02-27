@@ -162,15 +162,21 @@ fn capitalize(s: &str) -> String {
 }
 
 fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, Type>) -> Result<()> {
-	write!(w, "struct Mem{} {{\n", capitalize(name))?;
+	write!(w, "#[derive(Debug, Default)]\n")?;
+	write!(w, "struct {} {{\n", name)?;
 	for (k, t) in fields {
 		write!(w, "\t{}: {},\n", k, get_type(*t))?;
 	}
 	write!(w, "}}\n\n")
 }
 
-fn get_node_mem(n: &Node) -> HashMap<String, Type> {
-	let mut mem = HashMap::new();
+struct NodeMemory {
+	name: String,
+	fields: HashMap<String, Type>,
+}
+
+fn get_node_mem(n: &Node) -> NodeMemory {
+	let mut fields = HashMap::new();
 	for eq in n.body.iter() {
 		if let Expr::Fby(init, _) = &eq.body {
 			// TODO: support tuples
@@ -179,20 +185,26 @@ fn get_node_mem(n: &Node) -> HashMap<String, Type> {
 				Atom::Const(c) => type_of_const(c),
 				Atom::Ident(_) => unreachable!(),
 			};
-			mem.insert(eq.names[0].clone(), t);
+			fields.insert(eq.names[0].clone(), t);
 		}
 	}
-	mem
+	NodeMemory{
+		name: format!("Mem{}", capitalize(&n.name)),
+		fields: fields,
+	}
 }
 
 impl WriterTo for Node {
 	fn write_to(&self, w: &mut Write) -> Result<()> {
 		let mem = get_node_mem(self);
-		if mem.len() > 0 {
-			format_struct(w, &self.name, &mem)?;
+		if mem.fields.len() > 0 {
+			format_struct(w, &mem.name, &mem.fields)?;
 		}
 
 		write!(w, "fn {}(", &self.name)?;
+		if mem.fields.len() > 0 {
+			write!(w, "mem: &mut {}, ", &mem.name)?;
+		}
 		format_arg_list(w, &self.args_in, true, true)?;
 		write!(w, ") -> (")?;
 		format_arg_list(w, &self.args_out, false, true)?;
