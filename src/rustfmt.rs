@@ -75,13 +75,13 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 	}
 }
 
-fn format_expr(w: &mut Write, e: &Expr, mems: &HashMap<String, NodeMemory>) -> Result<()> {
+fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
 			let mut first = true;
-			if let Some(mem) = mems.get(name) {
-				unreachable!(); // TODO
+			if let Some(_) = mems.get(name) {
+				write!(w, "&mem.{}, ", dest)?;
 				first = false;
 			}
 			for arg in args {
@@ -108,7 +108,8 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	}
 	if !elems.is_empty()  { write!(w, ")")?; }
 	write!(w, " = ")?;
-	format_expr(w, &eq.body, mems)?;
+	// TODO: support tuples
+	format_expr(w, &eq.body, fst, mems)?;
 	write!(w, ";\n")
 }
 
@@ -150,31 +151,40 @@ fn capitalize(s: &str) -> String {
 	}
 }
 
-fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, Type>) -> Result<()> {
+fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>) -> Result<()> {
 	write!(w, "#[derive(Debug, Default)]\n")?;
 	write!(w, "struct {} {{\n", name)?;
 	for (k, t) in fields {
-		write!(w, "\t{}: {},\n", k, get_type(*t))?;
+		write!(w, "\t{}: {},\n", k, t)?;
 	}
 	write!(w, "}}\n\n")
 }
 
 struct NodeMemory {
 	name: String,
-	fields: HashMap<String, Type>,
+	fields: HashMap<String, String>,
 }
 
-fn get_node_mem(n: &Node) -> Option<NodeMemory> {
+fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemory> {
 	let mut fields = HashMap::new();
 	for eq in n.body.iter() {
-		if let Expr::Fby(init, _) = &eq.body {
-			// TODO: support tuples
-			assert!(eq.names.len() == 1);
-			let t = match &init[0] {
-				Atom::Const(c) => type_of_const(c),
-				Atom::Ident(_) => unreachable!(),
-			};
-			fields.insert(eq.names[0].clone(), t);
+		match &eq.body {
+			Expr::Call{name, args: _} => {
+				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let call_mem = mems.get(name).unwrap();
+				fields.insert(eq.names[0].clone(), call_mem.name.clone());
+			},
+			Expr::Fby(init, _) => {
+				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let t = match &init[0] {
+					Atom::Const(c) => type_of_const(c),
+					Atom::Ident(_) => unreachable!(),
+				};
+				fields.insert(eq.names[0].clone(), get_type(t).to_string());
+			},
+			_ => {},
 		}
 	}
 
@@ -218,7 +228,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 
 	let mut mems = HashMap::new();
 	for n in f {
-		if let Some(mem) = get_node_mem(n) {
+		if let Some(mem) = get_node_mem(n, &mems) {
 			mems.insert(n.name.clone(), mem);
 		}
 	}
@@ -245,7 +255,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			args: argv,
 		};
 		write!(w, "\t")?;
-		format_expr(w, &call, &mems)?;
+		format_expr(w, &call, "_", &mems)?;
 		write!(w, ";\n")?;
 	}
 	write!(w, "}}\n")
