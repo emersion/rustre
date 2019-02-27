@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use crate::nast::*;
 
 fn find_dep_atom(a: &Atom) -> Vec<String> {
@@ -35,7 +36,7 @@ fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
 fn find_dep_eq(e: &Equation) -> Vec<String> {
 	match &e.body {
 		Expr::Bexpr(be) => find_dep_bexpr(&be),
-		Expr::Call{name, args} => {
+		Expr::Call{name:_, args} => {
 			let v = args.iter().map(find_dep_bexpr);
 			v.into_iter().flatten().collect()
 		},
@@ -47,6 +48,36 @@ fn find_dep_eq(e: &Equation) -> Vec<String> {
 			v.into_iter().flatten().collect()
 		},
 	}
+}
+
+// propagates the dependencies for each equations
+fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>> {
+    let mut finaldeps = HashMap::new();
+
+    for (key, values) in deps {
+        let mut todo = VecDeque::from(values.clone());
+        let mut alldeps = vec!{};
+
+        // while the queue [todo] is not empty
+        while !(todo.is_empty()) {
+            let d = todo.pop_front().unwrap();
+            if deps.contains_key(&d) {
+                let values = deps.get(&d).unwrap();
+                for dnext in values {
+                    // don't add if already done or to be done
+                    if !alldeps.contains(dnext) && !todo.contains(dnext) {
+                        println!("alldeps doesn't contain {}",dnext);
+                        todo.push_back(dnext.to_string()); // add the dependecies
+                    }
+                }
+            }
+            if !alldeps.contains(&d) { // adds the current value as done
+                alldeps.push(d);
+            }
+        }
+        finaldeps.insert(key.to_string(), alldeps);
+    }
+    finaldeps
 }
 
 fn sequentialize_node(n: &Node) -> Node {
@@ -61,6 +92,17 @@ fn sequentialize_node(n: &Node) -> Node {
 			deps.insert(name.clone(), dep.clone());
 		}
 	}
+
+    for (k,v) in &deps {
+        println!("{} / {:?}", k, v)
+    }
+
+    let alldeps = propagate(&deps);
+
+    println!("PROPAGATED");
+    for (k,v) in alldeps {
+        println!("{} / {:?}", k, v)
+    }
 
 	// TODO: Resolve dependencies
 
