@@ -266,9 +266,15 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 		}
 	}
 	format_arg_list(w, &n.args_in, true, true)?;
-	write!(w, ") -> (")?;
+	write!(w, ") -> ")?;
+	if n.args_out.len() > 1 {
+		write!(w, "(")?;
+	}
 	format_arg_list(w, &n.args_out, false, true)?;
-	write!(w, ") {{\n")?;
+	if n.args_out.len() > 1 {
+		write!(w, ")")?;
+	}
+	write!(w, " {{\n")?;
 	for eq in &n.body {
 		format_equation(w, eq, mems)?;
 	}
@@ -281,9 +287,15 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 		}
 	}
 
-	write!(w, "\treturn (")?;
+	write!(w, "\treturn ")?;
+	if n.args_out.len() > 1 {
+		write!(w, "(")?;
+	}
 	format_arg_list(w, &n.args_out, true, false)?;
-	write!(w, ");\n")?;
+	if n.args_out.len() > 1 {
+		write!(w, ")")?;
+	}
+	write!(w, ";\n")?;
 	write!(w, "}}\n\n")
 }
 
