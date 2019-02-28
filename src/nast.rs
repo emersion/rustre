@@ -25,7 +25,7 @@ pub enum Expr {
 		name: String,
 		args: Vec<Bexpr>,
 	},
-	Fby(Vec<Atom>, Vec<Expr>),
+	Fby(Vec<Atom>, Vec<Bexpr>),
 }
 
 #[derive(Debug, Clone)]

@@ -189,7 +189,7 @@ struct NodeMemory {
 	name: String,
 	fields: HashMap<String, String>,
 	init_values: HashMap<String, Const>,
-	next_values: HashMap<String, Expr>,
+	next_values: HashMap<String, Bexpr>,
 }
 
 fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemory> {
@@ -256,7 +256,7 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 	if let Some(mem) = mem {
 		for (k, v) in &mem.next_values {
 			write!(w, "\tmem.{} = ", k)?;
-			format_expr(w, v, "_", mems)?;
+			format_bexpr(w, v)?;
 			write!(w, ";\n")?;
 		}
 	}
@@ -284,7 +284,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	}
 
 	// Call the last node in main()
-	write!(w, "fn main() {{\n");
+	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
 		// Pick some initial values for the node
 		// TODO: we should probably ask these to the user, and run the node in a loop
