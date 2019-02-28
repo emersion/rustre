@@ -79,21 +79,22 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
+			let mut first = true;
 			if let Some(_) = mems.get(name) {
 				if dest == "" {
 					// Used in main()
-					write!(w, "&mut mem, ")?;
+					write!(w, "&mut mem")?;
 				} else {
-					write!(w, "&mut mem.{}, ", dest)?;
+					write!(w, "&mut mem.{}", dest)?;
 				}
+				first = false;
 			}
-			let mut first = true;
 			for arg in args {
-				format_bexpr(w, arg)?;
 				if !first {
 					write!(w, ", ")?;
 				}
 				first = false;
+				format_bexpr(w, arg)?;
 			}
 			write!(w, ")")
 		},
@@ -136,6 +137,10 @@ fn get_type(t: Type) -> &'static str {
 fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool, with_typ: bool) -> Result<()> {
 	let mut first = true;
 	for (name, typ) in args {
+		if !first {
+			write!(w, ", ")?;
+		}
+		first = false;
 		if with_name {
 			write!(w, "{}", name)?;
 		}
@@ -145,10 +150,6 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 		if with_typ {
 			write!(w, "{}", get_type(*typ))?;
 		}
-		if !first {
-			write!(w, ", ")?;
-		}
-		first = false;
 	}
 	Ok(())
 }
@@ -246,7 +247,10 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 
 	write!(w, "fn {}(", &n.name)?;
 	if let Some(mem) = mem {
-		write!(w, "mem: &mut {}, ", &mem.name)?;
+		write!(w, "mem: &mut {}", &mem.name)?;
+		if !n.args_in.is_empty() {
+			write!(w, ", ")?;
+		}
 	}
 	format_arg_list(w, &n.args_in, true, true)?;
 	write!(w, ") -> (")?;
