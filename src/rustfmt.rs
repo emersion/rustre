@@ -79,21 +79,22 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
+			let mut first = true;
 			if let Some(_) = mems.get(name) {
 				if dest == "" {
 					// Used in main()
-					write!(w, "&mut mem, ")?;
+					write!(w, "&mut mem")?;
 				} else {
-					write!(w, "&mut mem.{}, ", dest)?;
+					write!(w, "&mut mem.{}", dest)?;
 				}
+				first = false;
 			}
-			let mut first = true;
 			for arg in args {
-				format_bexpr(w, arg)?;
 				if !first {
 					write!(w, ", ")?;
 				}
 				first = false;
+				format_bexpr(w, arg)?;
 			}
 			write!(w, ")")
 		},
@@ -136,6 +137,10 @@ fn get_type(t: Type) -> &'static str {
 fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool, with_typ: bool) -> Result<()> {
 	let mut first = true;
 	for (name, typ) in args {
+		if !first {
+			write!(w, ", ")?;
+		}
+		first = false;
 		if with_name {
 			write!(w, "{}", name)?;
 		}
@@ -145,10 +150,6 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 		if with_typ {
 			write!(w, "{}", get_type(*typ))?;
 		}
-		if !first {
-			write!(w, ", ")?;
-		}
-		first = false;
 	}
 	Ok(())
 }
@@ -189,7 +190,7 @@ struct NodeMemory {
 	name: String,
 	fields: HashMap<String, String>,
 	init_values: HashMap<String, Const>,
-	next_values: HashMap<String, Expr>,
+	next_values: HashMap<String, Bexpr>,
 }
 
 fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemory> {
@@ -197,19 +198,22 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 	let mut init_values = HashMap::new();
 	let mut next_values = HashMap::new();
 	for eq in n.body.iter() {
-		// TODO: support tuples
-		assert!(eq.names.len() == 1);
-		let dest = &eq.names[0];
-
 		match &eq.body {
 			Expr::Call{name, args: _} => {
+				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let dest = &eq.names[0];
+
 				if let Some(call_mem) = mems.get(name) {
 					fields.insert(dest.clone(), call_mem.name.clone());
 				}
 			},
 			Expr::Fby(init, next) => {
 				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let dest = &eq.names[0];
 				let (init, next) = (&init[0], &next[0]);
+
 				let init = match init {
 					Atom::Const(c) => c,
 					Atom::Ident(_) => unreachable!(),
@@ -243,7 +247,10 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 
 	write!(w, "fn {}(", &n.name)?;
 	if let Some(mem) = mem {
-		write!(w, "mem: &mut {}, ", &mem.name)?;
+		write!(w, "mem: &mut {}", &mem.name)?;
+		if !n.args_in.is_empty() {
+			write!(w, ", ")?;
+		}
 	}
 	format_arg_list(w, &n.args_in, true, true)?;
 	write!(w, ") -> (")?;
@@ -256,7 +263,7 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 	if let Some(mem) = mem {
 		for (k, v) in &mem.next_values {
 			write!(w, "\tmem.{} = ", k)?;
-			format_expr(w, v, "_", mems)?;
+			format_bexpr(w, v)?;
 			write!(w, ";\n")?;
 		}
 	}
@@ -284,7 +291,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	}
 
 	// Call the last node in main()
-	write!(w, "fn main() {{\n");
+	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
 		// Pick some initial values for the node
 		// TODO: we should probably ask these to the user, and run the node in a loop
