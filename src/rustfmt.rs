@@ -293,15 +293,21 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	// Call the last node in main()
 	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
+		for (name, typ) in &n.args_in {
+			write!(w, "\teprint!(\"{}: \");\n", name);
+			write!(w, "\tlet mut {}_str = String::new();\n", name)?;
+			write!(w, "\tstd::io::stdin().read_line(&mut {}_str).unwrap();\n", name)?;
+			match typ {
+				Type::String => write!(w, "\tlet {} = {}_str;\n", name, name)?,
+				_ => write!(w, "\tlet {} = {}_str.trim().parse::<{}>().unwrap();\n", name, name, get_type(*typ))?,
+			}
+			write!(w, "\n")?;
+		}
+
 		// Pick some initial values for the node
 		// TODO: we should probably ask these to the user, and run the node in a loop
-		let argv = n.args_in.iter().map(|(_name, typ)| {
-			let c = match typ {
-				Type::Unit => Const::Unit,
-				Type::Int => Const::Int(42),
-				_ => unreachable!(), // TODO
-			};
-			Bexpr::Atom(Atom::Const(c))
+		let argv = n.args_in.iter().map(|(name, _)| {
+			Bexpr::Atom(Atom::Ident(name.clone()))
 		}).collect();
 		let call = Expr::Call{
 			name: n.name.clone(),
