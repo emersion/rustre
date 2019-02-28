@@ -319,6 +319,11 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
 		for (name, typ) in &n.args_in {
+			if let Type::Unit = typ {
+				write!(w, "\tlet {} = ();\n", name)?;
+				continue
+			}
+
 			write!(w, "\teprint!(\"{}: \");\n", name)?;
 			write!(w, "\tlet mut {}_str = String::new();\n", name)?;
 			write!(w, "\tstd::io::stdin().read_line(&mut {}_str).unwrap();\n", name)?;
