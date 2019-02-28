@@ -35,7 +35,7 @@ fn type_of_bexpr(e: &Bexpr) -> Type {
 			let (_, body, _): &(Bexpr, Bexpr, Bexpr) = &*iff;
 			type_of_bexpr(body)
 		},
-		Bexpr::Tuple(_) => unreachable!(), // TODO
+		Bexpr::Tuple(items) => Type::Tuple(items.iter().map(type_of_bexpr).collect()),
 		Bexpr::Atom(atom) => type_of_atom(atom),
 	}
 }
@@ -43,7 +43,15 @@ fn type_of_bexpr(e: &Bexpr) -> Type {
 pub fn type_of(e: &Expr) -> Type {
 	match e {
 		Expr::Call{name: _, args: _} => unreachable!(), // TODO
-		Expr::Fby(_, _) => unreachable!(), // TODO
+		Expr::Fby(init, _) => {
+			if init.is_empty() {
+				Type::Unit
+			} else if init.len() == 1 {
+				type_of_atom(&init[0])
+			} else {
+				Type::Tuple(init.iter().map(type_of_atom).collect())
+			}
+		},
 		Expr::Bexpr(bexp) => type_of_bexpr(bexp),
 	}
 }
