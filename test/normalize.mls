@@ -1,3 +1,8 @@
+node f(i: int) returns (o: int);
+let
+	o = i + 1;
+tel
+
 node g() returns (o: int);
 let
 	o = f(f(1));

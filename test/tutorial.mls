@@ -1,12 +1,12 @@
 node dt () returns (dt: float);
-let 
+let
   dt = 0.001;
-tel 
+tel
 
 node g () returns (g: float);
-let 
+let
   g = 0.001;
-tel 
+tel
 
 node init() returns (o:bool);
 let
@@ -14,12 +14,12 @@ let
 tel
 
 node average (x, y:int) returns (o:int);
-let 
+let
   o = (x+y)/2;
 tel
 
 node xor(a,b:bool) returns (o:bool);
-let 
+let
   o = (a and not(b)) or (not a and b);
 tel
 
@@ -35,7 +35,7 @@ let
  co = a and b;
 tel
 
-node full_add(a,b,c:bool) returns (s, co:bool);
+node full_add2(a,b,c:bool) returns (s, co:bool);
 var s1, c1, c2: bool;
 let
   (s1, c1) = half_add(a,b);
@@ -45,7 +45,7 @@ tel
 
 node nat (m:int) returns (o:int);
 let
-  o = 0 fby o + 1; 
+  o = 0 fby o + 1;
 tel
 
 node edge (c:bool) returns (o:bool);
@@ -55,7 +55,7 @@ tel
 
 node integr (dx:float) returns (x:float);
 let
-  x = (0.0 fby x) +. dx *. dt(); 
+  x = (0.0 fby x) +. dx *. dt();
 tel
 
 node double_integr (d2x: float) returns (x: float);
