@@ -362,6 +362,22 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	write!(w, "\treturn !b;\n")?;
 	write!(w, "}}\n\n")?;
 
+	write!(w, "fn cos(f: f32) -> f32 {{\n")?;
+	write!(w, "\treturn f.cos();\n")?;
+	write!(w, "}}\n\n")?;
+
+	write!(w, "fn sin(f: f32) -> f32 {{\n")?;
+	write!(w, "\treturn f.sin();\n")?;
+	write!(w, "}}\n\n")?;
+
+	write!(w, "fn float_of_int(i: i32) -> f32 {{\n")?;
+	write!(w, "\treturn i as f32;\n")?;
+	write!(w, "}}\n\n")?;
+
+	write!(w, "fn int_of_float(f: f32) -> i32 {{\n")?;
+	write!(w, "\treturn f as i32;\n")?;
+	write!(w, "}}\n\n")?;
+
 	// Create one memory per node, if needed
 	let mut mems = HashMap::new();
 	for n in f {
