@@ -1,3 +1,30 @@
+// Sequentializer re-orders the equations in the Nodes' body
+//
+// This is done in four steps:
+//
+// 1. Generating the direct dependencies for each equation (find_dep_XXX)
+//		This is done by adding all the Ident in the left side of each equations to the dependencies
+//		We represent the graph using a HashMap<String, Vec<String>>
+//			keys: Varname
+//			values: List of var that the key depends on (children in a Graph)
+//
+// 2. Propagating the dependencies (propagate)
+//		We explore the children of each variable and add their own dependecies to the current Variable
+// 		We use a queue of what remains to be explored and keep track of what variable we already visited
+//		so as to not loop endlessly.
+//
+// 3. Checking the satisfiability of the ordering
+//		The only way we could not be able to order the equations is the circular dependency
+//		We can detect those easily by finding the cycles in the graph.
+//		Thanks to propagation we just need to check that no variable depends on itself to be computed.
+//
+// 4. Re-ordering using the dependencies (order)
+//		We construct the Node's body incrementally
+//		Each loop turn we check wether or not all the dependecies of each equation has been met.
+//		If it has we can append this equation to the body
+//		We repeat this until all the equations are placed in the body.
+//
+
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use crate::nast::*;
@@ -71,7 +98,8 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 					}
 				}
 			}
-			if !alldeps.contains(&d) { // adds the current value as done
+			// adds the current value as done
+			if !alldeps.contains(&d) {
 				alldeps.push(d);
 			}
 		}
@@ -80,6 +108,7 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 	finaldeps
 }
 
+// orders the equations using the dependency graph
 fn order(n: &Node, mut alldeps: HashMap<String, Vec<String>>) -> Vec<Equation> {
 	let mut orderedEqs = Vec::new();
 
@@ -88,18 +117,18 @@ fn order(n: &Node, mut alldeps: HashMap<String, Vec<String>>) -> Vec<Equation> {
 
 		for (var, deps) in &alldeps {
 			let mut ok = true;
-
+			// Compute: if the dependecies have been met by previously added equations and inputs
 			for dep in deps {
 				let isPrevEq = orderedEqs.iter().fold(false, |r, val: &Equation| {
 					r || val.names.contains(&dep)
 				});
 				ok = ok && (n.args_in.contains_key(dep) || isPrevEq);
 			}
-			if ok { // dependencies satisfied
+			if ok { // if dependencies satisfied
+				// we put the corresponding equation as the next one to be computed
 				let eq = n.body.iter().find(|&eq1| eq1.names.contains(&var)).unwrap();
 				orderedEqs.push(eq.clone());
 
-				// removing variables that are also computed by the equation
 				for (k, _) in &alldeps {
 					if eq.names.contains(k) {
 						remove.push(k.clone());
@@ -108,6 +137,8 @@ fn order(n: &Node, mut alldeps: HashMap<String, Vec<String>>) -> Vec<Equation> {
 			}
 		}
 
+		// removing variables that are also computed by the equation (in tuples)
+		// this works because all variables assigned in a tuple all have the same dependecies
 		for k in &remove {
 			alldeps.remove(k);
 		}
