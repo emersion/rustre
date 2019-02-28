@@ -67,13 +67,24 @@ fn normalize_bexpr(e: &ast::Expr, intermediates: &mut HashMap<String, Option<Exp
 		ast::Expr::Unop(unop, e) => Bexpr::Unop(unop.clone(), Box::new(normalize_bexpr(e, intermediates))),
 		ast::Expr::Binop(binop, exprs) => {
 			let (e1, e2): &(ast::Expr, ast::Expr) = &*exprs;
-			Bexpr::Binop(binop.clone(), Box::new((normalize_bexpr(e1, intermediates), normalize_bexpr(e2, intermediates))))
+			Bexpr::Binop(binop.clone(), Box::new((
+				normalize_bexpr(e1, intermediates),
+				normalize_bexpr(e2, intermediates),
+			)))
 		},
 		ast::Expr::If(iff) => {
 			let (cond, body, else_part): &(ast::Expr, ast::Expr, ast::Expr) = &*iff;
-			Bexpr::If(Box::new((normalize_bexpr(cond, intermediates), normalize_bexpr(body, intermediates), normalize_bexpr(else_part, intermediates))))
+			Bexpr::If(Box::new((
+				normalize_bexpr(cond, intermediates),
+				normalize_bexpr(body, intermediates),
+				normalize_bexpr(else_part, intermediates),
+			)))
 		},
-		ast::Expr::Tuple(exprs) => Bexpr::Tuple(exprs.iter().map(|e| normalize_bexpr(e, intermediates)).collect()),
+		ast::Expr::Tuple(exprs) => {
+			Bexpr::Tuple(exprs.iter().map(|e| {
+				normalize_bexpr(e, intermediates)
+			}).collect())
+		},
 		_ => Bexpr::Atom(normalize_atom(e, intermediates)),
 	}
 }

@@ -1,6 +1,6 @@
 RUSTC ?= rustc
 CARGO ?= cargo
-TARGETS = pendulum simple sujet tutorial
+TARGETS = pendulum simple sujet tutorial normalize
 
 all: $(TARGETS)
 
