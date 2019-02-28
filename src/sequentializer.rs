@@ -23,11 +23,11 @@ fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
 			let mut v1 = find_dep_bexpr(e1);
 			v1.append(&mut find_dep_bexpr(e2));
 			v1
-		}
-		Bexpr::Tuple(vexpr) => { // may be improved in some cases
+		},
+		Bexpr::Tuple(vexpr) => { // may be improved in some cases (ie: Tuple = Tuple)
 			let v = vexpr.iter().map(find_dep_bexpr);
 			v.into_iter().flatten().collect()
-		}
+		},
 		Bexpr::Atom(a) => find_dep_atom(a),
 	}
 }
@@ -79,6 +79,41 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 	finaldeps
 }
 
+fn order(n: &Node, mut alldeps: HashMap<String, Vec<String>>) -> Vec<Equation> {
+	let mut orderedEqs = Vec::new();
+
+	while !alldeps.is_empty() {
+		let mut remove = Vec::new();
+
+		for (var, deps) in &alldeps {
+			let mut ok = true;
+
+			for dep in deps {
+				let isPrevEq = orderedEqs.iter().fold(false, |r, val: &Equation| {
+					r || val.names.contains(&dep)
+				});
+				ok = ok && (n.args_in.contains_key(dep) || isPrevEq);
+			}
+			if ok { // dependencies satisfied
+				let eq = n.body.iter().find(|&eq1| eq1.names.contains(&var)).unwrap();
+				orderedEqs.push(eq.clone());
+
+				// removing variables that are also computed by the equation
+				for (k, _) in &alldeps {
+					if eq.names.contains(k) {
+						remove.push(k.clone());
+					}
+				}
+			}
+		}
+
+		for k in &remove {
+			alldeps.remove(k);
+		}
+	}
+	orderedEqs
+}
+
 fn sequentialize_node(n: &Node) -> Node {
 	// Create dependency graph
 	let mut deps: HashMap<String, Vec<String>> = HashMap::new();
@@ -92,11 +127,12 @@ fn sequentialize_node(n: &Node) -> Node {
 		}
 	}
 
-	for (k, v) in &deps {
+	let alldeps = propagate(&deps);
+
+	eprintln!("Depedencies for Node [{}]", n.name);
+	for (k, v) in &alldeps {
 		eprintln!("{} -> {:?}", k, v)
 	}
-
-	let alldeps = propagate(&deps);
 
 	// Check if there is a solution to the ordering problem
 	for (key, deps) in &alldeps {
@@ -105,19 +141,14 @@ fn sequentialize_node(n: &Node) -> Node {
 		}
 	}
 
-	eprintln!("PROPAGATED");
-	for (k, v) in alldeps {
-		eprintln!("{} / {:?}", k, v)
-	}
-
-	// TODO: order equations using alldeps
+	let orderedBody = order(&n, alldeps);
 
 	Node{
 		name: n.name.clone(),
 		args_in: n.args_in.clone(),
 		args_out: n.args_out.clone(),
 		locals: n.locals.clone(),
-		body: n.body.clone(),
+		body: orderedBody,
 	}
 }
 
