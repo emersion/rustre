@@ -54,6 +54,7 @@ fn normalize_atom(e: &ast::Expr, intermediates: &mut HashMap<String, Option<Expr
 		_ => {
 			// Create a local variable to store the intermediate value
 			let name = fresh_intermediate(intermediates);
+			intermediates.insert(name.clone(), None); // Reserve this intermediate
 			let e = normalize_expr(e, intermediates);
 			intermediates.insert(name.clone(), Some(e));
 			Atom::Ident(name)
