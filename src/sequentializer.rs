@@ -1,29 +1,28 @@
-// Sequentializer re-orders the equations in the Nodes' body
+// Sequentializer re-orders the equations in the nodes' body
 //
 // This is done in four steps:
 //
 // 1. Generating the direct dependencies for each equation (find_dep_XXX)
-//		This is done by adding all the Ident in the left side of each equations to the dependencies
-//		We represent the graph using a HashMap<String, Vec<String>>
-//			keys: Varname
-//			values: List of var that the key depends on (children in a Graph)
+//    This is done by adding all the Ident in the left side of each equations to the dependencies
+//    We represent the graph using a HashMap<String, Vec<String>>
+//      keys: Varname
+//      values: List of var that the key depends on (children in a Graph)
 //
 // 2. Propagating the dependencies (propagate)
-//		We explore the children of each variable and add their own dependecies to the current Variable
-// 		We use a queue of what remains to be explored and keep track of what variable we already visited
-//		so as to not loop endlessly.
+//    We explore the children of each variable and add their own dependecies to the current Variable
+//    We use a queue of what remains to be explored and keep track of what variable we already visited
+//    so as to not loop endlessly.
 //
 // 3. Checking the satisfiability of the ordering
-//		The only way we could not be able to order the equations is the circular dependency
-//		We can detect those easily by finding the cycles in the graph.
-//		Thanks to propagation we just need to check that no variable depends on itself to be computed.
+//    The only way we could not be able to order the equations is the circular dependency
+//    We can detect those easily by finding the cycles in the graph.
+//    Thanks to propagation we just need to check that no variable depends on itself to be computed.
 //
 // 4. Re-ordering using the dependencies (order)
-//		We construct the Node's body incrementally
-//		Each loop turn we check wether or not all the dependecies of each equation has been met.
-//		If it has we can append this equation to the body
-//		We repeat this until all the equations are placed in the body.
-//
+//    We construct the Node's body incrementally
+//    Each loop turn we check wether or not all the dependecies of each equation has been met.
+//    If it has we can append this equation to the body
+//    We repeat this until all the equations are placed in the body.
 
 use std::collections::HashMap;
 use std::collections::VecDeque;

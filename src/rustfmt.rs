@@ -128,21 +128,7 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, 
 			write!(w, ")")
 		},
 		Expr::Fby(_, _) => {
-			if dest.len() != 1 {
-				write!(w, "(")?;
-			}
-			let mut first = true;
-			for d in dest {
-				if !first {
-					write!(w, ", ")?;
-				}
-				first = false;
-				write!(w, "mem.{}", d)?;
-			}
-			if dest.len() != 1 {
-				write!(w, ")")?;
-			}
-			Ok(())
+			write!(w, "mem.{}", dest.join("_"))
 		},
 		Expr::Bexpr(bexpr) => format_bexpr(w, bexpr),
 	}
@@ -213,7 +199,7 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 	Ok(())
 }
 
-fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, init_values: &HashMap<String, Const>) -> Result<()> {
+fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, init_values: &HashMap<String, Vec<Const>>) -> Result<()> {
 	write!(w, "#[derive(Debug)]\n")?;
 	write!(w, "struct {} {{\n", name)?;
 	for (k, t) in fields {
@@ -227,7 +213,22 @@ fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, in
 	for (k, _) in fields {
 		write!(w, "\t\t\t{}: ", k)?;
 		match init_values.get(k) {
-			Some(c) => format_const(w, c)?,
+			Some(consts) => {
+				if consts.len() == 1 {
+					format_const(w, &consts[0])?;
+				} else {
+					write!(w, "(")?;
+					let mut first = true;
+					for c in consts {
+						if !first {
+							write!(w, ", ")?;
+						}
+						first = false;
+						format_const(w, c)?;
+					}
+					write!(w, ")")?;
+				}
+			},
 			None => write!(w, "Default::default()")?,
 		}
 		write!(w, ",\n")?;
@@ -245,11 +246,21 @@ fn capitalize(s: &str) -> String {
 	}
 }
 
+fn bexpr_from_vec(v: Vec<Bexpr>) -> Bexpr {
+	if v.is_empty() {
+		Bexpr::Atom(Atom::Const(Const::Unit))
+	} else if v.len() == 1 {
+		v.into_iter().nth(0).unwrap()
+	} else {
+		Bexpr::Tuple(v)
+	}
+}
+
 struct NodeMemory {
 	name: String,
 	/// Name and type of each field
 	fields: HashMap<String, String>,
-	init_values: HashMap<String, Const>,
+	init_values: HashMap<String, Vec<Const>>,
 	next_values: HashMap<String, Bexpr>,
 }
 
@@ -258,26 +269,27 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 	let mut init_values = HashMap::new(); // Initialization values for each field (only for `fby`)
 	let mut next_values = HashMap::new(); // Next values for each field (only for `fby`)
 	for eq in &n.body {
+		let dest = eq.names.join("_");
 		match &eq.body {
 			Expr::Call{name, args: _} => {
-				let dest = &eq.names[0];
 				if let Some(call_mem) = mems.get(name) {
-					fields.insert(dest.clone(), call_mem.name.clone());
+					fields.insert(dest, call_mem.name.clone());
 				}
 			},
 			Expr::Fby(init, next) => {
-				for (i, dest) in eq.names.iter().enumerate() {
-					let (init, next) = (&init[i], &next[i]);
-
-					let init = match init {
-						Atom::Const(c) => c,
-						Atom::Ident(_) => unreachable!(),
-					};
-					let t = type_of_const(init);
-					init_values.insert(dest.clone(), init.clone());
-					next_values.insert(dest.clone(), next.clone());
-					fields.insert(dest.clone(), get_type(&t).to_string());
-				}
+				let init: Vec<Const> = init.iter().map(|atom| match atom {
+					Atom::Const(c) => c.clone(),
+					_ => unreachable!(),
+				}).collect();
+				let next = bexpr_from_vec(next.clone());
+				let t = match init.len() {
+					0 => Type::Unit,
+					1 => type_of_const(&init[0]),
+					_ => Type::Tuple(init.iter().map(type_of_const).collect()),
+				};
+				init_values.insert(dest.clone(), init.clone());
+				next_values.insert(dest.clone(), next.clone());
+				fields.insert(dest.clone(), get_type(&t).to_string());
 			},
 			_ => {},
 		}
