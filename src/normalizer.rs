@@ -3,12 +3,13 @@ use crate::ast;
 use crate::nast::*;
 
 fn fresh_intermediate(intermediates: &mut HashMap<String, Expr>) -> String {
-	let i = 1;
+	let mut i = 1;
 	loop {
 		let name = format!("tmp{}", i);
 		if !intermediates.contains_key(&name) {
 			return name;
 		}
+		i += 1;
 	}
 }
 

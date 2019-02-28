@@ -21,13 +21,13 @@ fn main() {
 	stdin().read_to_string(&mut buffer).unwrap();
 
 	let f = parse(&buffer).unwrap();
-	eprintln!("{:?}", &f);
+	eprintln!("parsed: {:?}", &f);
 
 	let nf = normalize(&f);
-	eprintln!("{:?}", &nf);
+	eprintln!("normalized: {:?}", &nf);
 
 	let sf = sequentialize(&nf);
-	eprintln!("{:?}", &sf);
+	eprintln!("sequentialized: {:?}", &sf);
 
 	format(&mut stdout(), &sf).unwrap();
 }
