@@ -66,7 +66,6 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 				for dnext in values {
 					// don't add if already done or to be done
 					if !alldeps.contains(dnext) && !todo.contains(dnext) {
-						eprintln!("alldeps doesn't contain {}", dnext);
 						todo.push_back(dnext.to_string()); // add the dependecies
 					}
 				}
@@ -77,7 +76,6 @@ fn propagate(deps: &HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>
 		}
 		finaldeps.insert(key.to_string(), alldeps);
 	}
-
 	finaldeps
 }
 
@@ -95,17 +93,24 @@ fn sequentialize_node(n: &Node) -> Node {
 	}
 
 	for (k, v) in &deps {
-		eprintln!("{} / {:?}", k, v)
+		eprintln!("{} -> {:?}", k, v)
 	}
 
 	let alldeps = propagate(&deps);
+
+	// Check if there is a solution to the ordering problem
+	for (key, deps) in &alldeps {
+		if deps.contains(key) {
+			panic!("Circular dependency detected for {} -> {:?}", key, deps)
+		}
+	}
 
 	eprintln!("PROPAGATED");
 	for (k, v) in alldeps {
 		eprintln!("{} / {:?}", k, v)
 	}
 
-	// TODO: Resolve dependencies
+	// TODO: order equations using alldeps
 
 	Node{
 		name: n.name.clone(),
