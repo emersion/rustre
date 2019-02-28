@@ -121,7 +121,7 @@ fn sequentialize_node(n: &Node) -> Node {
 		let dep = find_dep_eq(&eq);
 		for name in &eq.names {
 			if deps.contains_key(name) {
-				panic!("Two equations define '{}' in node '{}'", name, &n.name)
+				panic!("Two equations define `{}` in node `{}`", name, &n.name)
 			}
 			deps.insert(name.clone(), dep.clone());
 		}
@@ -137,7 +137,7 @@ fn sequentialize_node(n: &Node) -> Node {
 	// Check if there is a solution to the ordering problem
 	for (key, deps) in &alldeps {
 		if deps.contains(key) {
-			panic!("Circular dependency detected for {} -> {:?}", key, deps)
+			panic!("Circular dependency detected in node `{}` for `{}` -> {:?}", &n.name, key, deps)
 		}
 	}
 
