@@ -316,8 +316,6 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			write!(w, "\n")?;
 		}
 
-		// Pick some initial values for the node
-		// TODO: we should probably ask these to the user, and run the node in a loop
 		let argv = n.args_in.iter().map(|(name, _)| {
 			Bexpr::Atom(Atom::Ident(name.clone()))
 		}).collect();
