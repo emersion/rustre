@@ -19,9 +19,10 @@ fn find_dep_bexpr(e: &Bexpr) -> Vec<String> {
 			v1
 		},
 		Bexpr::If(exprs) => {
-			let (_, e1, e2): &(Bexpr, Bexpr, Bexpr) = &*exprs;
+			let (e1, e2, e3): &(Bexpr, Bexpr, Bexpr) = &*exprs;
 			let mut v1 = find_dep_bexpr(e1);
 			v1.append(&mut find_dep_bexpr(e2));
+			v1.append(&mut find_dep_bexpr(e3));
 			v1
 		},
 		Bexpr::Tuple(vexpr) => { // may be improved in some cases (ie: Tuple = Tuple)
