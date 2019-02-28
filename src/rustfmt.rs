@@ -197,19 +197,22 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 	let mut init_values = HashMap::new();
 	let mut next_values = HashMap::new();
 	for eq in n.body.iter() {
-		// TODO: support tuples
-		assert!(eq.names.len() == 1);
-		let dest = &eq.names[0];
-
 		match &eq.body {
 			Expr::Call{name, args: _} => {
+				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let dest = &eq.names[0];
+
 				if let Some(call_mem) = mems.get(name) {
 					fields.insert(dest.clone(), call_mem.name.clone());
 				}
 			},
 			Expr::Fby(init, next) => {
 				// TODO: support tuples
+				assert!(eq.names.len() == 1);
+				let dest = &eq.names[0];
 				let (init, next) = (&init[0], &next[0]);
+
 				let init = match init {
 					Atom::Const(c) => c,
 					Atom::Ident(_) => unreachable!(),
