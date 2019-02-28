@@ -36,7 +36,7 @@ use std::collections::HashMap;
 use crate::ast;
 use crate::nast::*;
 
-fn fresh_intermediate(intermediates: &mut HashMap<String, Expr>) -> String {
+fn fresh_intermediate(intermediates: &mut HashMap<String, Option<Expr>>) -> String {
 	let mut i = 1;
 	loop {
 		let name = format!("tmp{}", i);
@@ -47,7 +47,7 @@ fn fresh_intermediate(intermediates: &mut HashMap<String, Expr>) -> String {
 	}
 }
 
-fn normalize_atom(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> Atom {
+fn normalize_atom(e: &ast::Expr, intermediates: &mut HashMap<String, Option<Expr>>) -> Atom {
 	match e {
 		ast::Expr::Const(c) => Atom::Const(c.clone()),
 		ast::Expr::Ident(ident) => Atom::Ident(ident.to_string()),
@@ -55,13 +55,13 @@ fn normalize_atom(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> A
 			// Create a local variable to store the intermediate value
 			let name = fresh_intermediate(intermediates);
 			let e = normalize_expr(e, intermediates);
-			intermediates.insert(name.clone(), e);
+			intermediates.insert(name.clone(), Some(e));
 			Atom::Ident(name)
 		},
 	}
 }
 
-fn normalize_bexpr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> Bexpr {
+fn normalize_bexpr(e: &ast::Expr, intermediates: &mut HashMap<String, Option<Expr>>) -> Bexpr {
 	match e {
 		ast::Expr::Unop(unop, e) => Bexpr::Unop(unop.clone(), Box::new(normalize_bexpr(e, intermediates))),
 		ast::Expr::Binop(binop, exprs) => {
@@ -77,7 +77,7 @@ fn normalize_bexpr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> 
 	}
 }
 
-fn normalize_expr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> Expr {
+fn normalize_expr(e: &ast::Expr, intermediates: &mut HashMap<String, Option<Expr>>) -> Expr {
 	match e {
 		ast::Expr::Call{name, args} => Expr::Call{
 			name: name.to_string(),
@@ -107,7 +107,7 @@ fn normalize_expr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> E
 	}
 }
 
-fn normalize_equation(eq: &ast::Equation, intermediates: &mut HashMap<String, Expr>) -> Equation {
+fn normalize_equation(eq: &ast::Equation, intermediates: &mut HashMap<String, Option<Expr>>) -> Equation {
 	Equation{
 		names: eq.names.clone(),
 		body: normalize_expr(&eq.body, intermediates),
@@ -118,16 +118,18 @@ fn normalize_node(n: &ast::Node) -> Node {
 	let mut intermediates = HashMap::new();
 	// Prevent local names from being used for intermediates
 	for (name, _) in n.locals.iter() {
-		intermediates.insert(name.clone(), Expr::Bexpr(Bexpr::Atom(Atom::Const(Const::Unit))));
+		intermediates.insert(name.clone(), None);
 	}
 	let mut body: Vec<Equation> = n.body.iter().map(|eq| {
 		normalize_equation(eq, &mut intermediates)
 	}).collect();
 	let mut locals = n.locals.clone();
 	for (name, e) in intermediates {
-		// TODO: the local name isn't Type::Unit (though we don't use it)
-		locals.insert(name.clone(), Type::Unit);
-		body.push(Equation{names: vec!(name), body: e});
+		if let Some(e) = e {
+			// TODO: the local name isn't Type::Unit (though we don't use it)
+			locals.insert(name.clone(), Type::Unit);
+			body.push(Equation{names: vec!(name), body: e});
+		}
 	}
 	Node{
 		name: n.name.clone(),
