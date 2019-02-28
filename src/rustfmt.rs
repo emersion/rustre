@@ -8,7 +8,8 @@ fn format_const(w: &mut Write, c: &Const) -> Result<()> {
 		Const::Unit => write!(w, "()"),
 		Const::Bool(b) => write!(w, "{}", b),
 		Const::Int(i) => write!(w, "{}", i),
-		Const::Float(f) => write!(w, "{}", f),
+		// Need to always use a dot for Rust to understand it's a float constant
+		Const::Float(f) => write!(w, "{:?}", f),
 		Const::String(s) => write!(w, "\"{}\"", s), // TODO: escaping
 	}
 }
@@ -49,9 +50,9 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 		},
 		Bexpr::If(iff) => {
 			let (cond, body, else_part): &(Bexpr, Bexpr, Bexpr) = &*iff;
-			write!(w, "if (")?;
+			write!(w, "if ")?;
 			format_bexpr(w, cond)?;
-			write!(w, ") {{ ")?;
+			write!(w, " {{ ")?;
 			format_bexpr(w, body)?;
 			write!(w, " }} else {{ ")?;
 			format_bexpr(w, else_part)?;
