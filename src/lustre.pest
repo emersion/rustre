@@ -1,7 +1,7 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
+ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 arg_idents = { ident ~ ("," ~ ident)* }
 arg = { arg_idents ~ ":" ~ ident }
 arg_list = { (arg ~ ("," ~ arg)*)? }
@@ -21,15 +21,15 @@ unop = @{ "-" | "-." | "not" }
 binop = @{ "+." | "-." | "*." | "/." | "+" | "-" | "*" | "/" |
 	"<=" | ">=" | "<" | ">" | "=" | "and" | "or" | "fby" }
 unop_expr = { unop ~ expr }
-binop_expr = { "(" ~ expr ~ binop ~ expr ~ ")" }
 ifrule = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
 pexpr = { "(" ~ expr ~ ")" }
 expr_tuple = { "(" ~ expr ~ ("," ~ expr)+ ~ ")" }
-expr = _{ call | constant | unop_expr | binop_expr | ifrule | ident | expr_tuple | pexpr }
+term = _{ call | constant | unop_expr | ifrule | ident | expr_tuple | pexpr }
+expr = { term ~ (binop ~ expr)* }
 motif = { "(" ~ ident ~ ("," ~ ident)* ~ ")" | ident ~ ("," ~ ident)* }
 eq = { motif ~ "=" ~ expr ~ ";" }
 eq_list = { eq* }
-local = { ("var" ~ arg_list ~ ";")? }
+local = { ("var" ~ (arg_list ~ ";")*)? }
 node = {
 	"node" ~ ident ~ "(" ~ arg_list ~ ")" ~
 	"returns" ~ "(" ~ arg_list ~ ")" ~ ";" ~

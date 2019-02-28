@@ -102,7 +102,7 @@ fn parse_binop_or_fby(pair: Pair<Rule>) -> BinopOrFby {
 	}
 }
 
-fn parse_expr(pair: Pair<Rule>) -> Expr {
+fn parse_term(pair: Pair<Rule>) -> Expr {
 	match pair.as_rule() {
 		Rule::call => {
 			let mut inner_rules = pair.into_inner();
@@ -128,16 +128,6 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			let belse = parse_expr(inner_rules.next().unwrap());
 			Expr::If(Box::new((cond, bif, belse)))
 		},
-		Rule::binop_expr => {
-			let mut inner_rules = pair.into_inner();
-			let e1 = parse_expr(inner_rules.next().unwrap());
-			let binop_or_fby = parse_binop_or_fby(inner_rules.next().unwrap());
-			let e2 = parse_expr(inner_rules.next().unwrap());
-			match binop_or_fby {
-				BinopOrFby::Binop(binop) => Expr::Binop(binop, Box::new((e1, e2))),
-				BinopOrFby::Fby => Expr::Fby(Box::new((e1, e2))),
-			}
-		},
 		Rule::ident => {
 			let id = pair.as_str().to_string();
 			Expr::Ident(id)
@@ -150,6 +140,23 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 			Expr::Tuple(exprs)
 		},
 		_ => unreachable!(),
+	}
+}
+
+fn parse_expr(pair: Pair<Rule>) -> Expr {
+	assert!(pair.as_rule() == Rule::expr);
+	let mut inner_rules = pair.into_inner();
+	let left = parse_term(inner_rules.next().unwrap());
+	match inner_rules.next() {
+		Some(binop_pair) => {
+			let binop_or_fby = parse_binop_or_fby(binop_pair);
+			let right = parse_expr(inner_rules.next().unwrap());
+			match binop_or_fby {
+				BinopOrFby::Binop(binop) => Expr::Binop(binop, Box::new((left, right))),
+				BinopOrFby::Fby => Expr::Fby(Box::new((left, right))),
+			}
+		},
+		None => left,
 	}
 }
 
