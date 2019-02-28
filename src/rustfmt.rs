@@ -360,6 +360,10 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	write!(w, "\tprintln!(\"{{}}\", s);\n")?;
 	write!(w, "}}\n\n")?;
 
+	write!(w, "fn not(b: bool) -> bool {{\n")?;
+	write!(w, "\treturn !b;\n")?;
+	write!(w, "}}\n\n")?;
+
 	// Create one memory per node, if needed
 	let mut mems = HashMap::new();
 	for n in f {
