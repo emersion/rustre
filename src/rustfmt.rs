@@ -112,9 +112,7 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, 
 					// Used in main()
 					write!(w, "&mut mem")?;
 				} else {
-					// TODO: what to do if dest.len() > 1?
-					//assert!(dest.len() == 1);
-					write!(w, "&mut mem.{}", &dest[0])?;
+					write!(w, "&mut mem.{}", dest.join("_"))?;
 				}
 				first = false;
 			}
