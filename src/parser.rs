@@ -35,7 +35,7 @@ fn parse_arg_list(pair: Pair<Rule>) -> HashMap<String, Type> {
 	for arg_idents in pair.into_inner() {
 		let (args, typ) = parse_arg(arg_idents);
 		for arg in args {
-			arg_list.insert(arg, typ);
+			arg_list.insert(arg, typ.clone());
 		}
 	}
 	arg_list

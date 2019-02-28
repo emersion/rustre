@@ -169,13 +169,27 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	write!(w, ";\n")
 }
 
-fn get_type(t: Type) -> &'static str {
-	match t {
-		Type::Unit => "()",
-		Type::Bool => "bool",
-		Type::Int => "i32",
-		Type::Float => "f32",
-		Type::String => "String",
+fn get_type(typ: &Type) -> String {
+	match typ {
+		Type::Unit => "()".to_string(),
+		Type::Bool => "bool".to_string(),
+		Type::Int => "i32".to_string(),
+		Type::Float => "f32".to_string(),
+		Type::String => "String".to_string(),
+		Type::Tuple(types) => {
+			let mut s = String::new();
+			s += "(";
+			let mut first = true;
+			for t in types {
+				if !first {
+					s += ", ";
+				}
+				first = false;
+				s += &get_type(t);
+			}
+			s += ")";
+			s
+		},
 	}
 }
 
@@ -193,7 +207,7 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 			write!(w, ": ")?;
 		}
 		if with_typ {
-			write!(w, "{}", get_type(*typ))?;
+			write!(w, "{}", get_type(typ))?;
 		}
 	}
 	Ok(())
@@ -262,7 +276,7 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 					let t = type_of_const(init);
 					init_values.insert(dest.clone(), init.clone());
 					next_values.insert(dest.clone(), next.clone());
-					fields.insert(dest.clone(), get_type(t).to_string());
+					fields.insert(dest.clone(), get_type(&t).to_string());
 				}
 			},
 			_ => {},
@@ -365,7 +379,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			write!(w, "\tstd::io::stdin().read_line(&mut {}_str).unwrap();\n", name)?;
 			match typ {
 				Type::String => write!(w, "\tlet {} = {}_str;\n", name, name)?,
-				_ => write!(w, "\tlet {} = {}_str.trim().parse::<{}>().unwrap();\n", name, name, get_type(*typ))?,
+				_ => write!(w, "\tlet {} = {}_str.trim().parse::<{}>().unwrap();\n", name, name, get_type(typ))?,
 			}
 			write!(w, "\n")?;
 		}

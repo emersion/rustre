@@ -6,13 +6,14 @@
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Type {
 	Unit,
 	Bool,
 	Int,
 	Float,
 	String,
+	Tuple(Vec<Type>),
 }
 
 #[derive(Debug, Clone)]
