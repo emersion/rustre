@@ -197,7 +197,7 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 	let mut fields = HashMap::new();
 	let mut init_values = HashMap::new();
 	let mut next_values = HashMap::new();
-	for eq in n.body.iter() {
+	for eq in &n.body {
 		match &eq.body {
 			Expr::Call{name, args: _} => {
 				// TODO: support tuples
@@ -209,19 +209,18 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 				}
 			},
 			Expr::Fby(init, next) => {
-				// TODO: support tuples
-				assert!(eq.names.len() == 1);
-				let dest = &eq.names[0];
-				let (init, next) = (&init[0], &next[0]);
+				for (i, dest) in eq.names.iter().enumerate() {
+					let (init, next) = (&init[i], &next[i]);
 
-				let init = match init {
-					Atom::Const(c) => c,
-					Atom::Ident(_) => unreachable!(),
-				};
-				let t = type_of_const(init);
-				init_values.insert(dest.clone(), init.clone());
-				next_values.insert(dest.clone(), next.clone());
-				fields.insert(dest.clone(), get_type(t).to_string());
+					let init = match init {
+						Atom::Const(c) => c,
+						Atom::Ident(_) => unreachable!(),
+					};
+					let t = type_of_const(init);
+					init_values.insert(dest.clone(), init.clone());
+					next_values.insert(dest.clone(), next.clone());
+					fields.insert(dest.clone(), get_type(t).to_string());
+				}
 			},
 			_ => {},
 		}
@@ -294,7 +293,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
 		for (name, typ) in &n.args_in {
-			write!(w, "\teprint!(\"{}: \");\n", name);
+			write!(w, "\teprint!(\"{}: \");\n", name)?;
 			write!(w, "\tlet mut {}_str = String::new();\n", name)?;
 			write!(w, "\tstd::io::stdin().read_line(&mut {}_str).unwrap();\n", name)?;
 			match typ {

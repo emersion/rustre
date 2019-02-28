@@ -51,8 +51,23 @@ fn normalize_expr(e: &ast::Expr, intermediates: &mut HashMap<String, Expr>) -> E
 		},
 		ast::Expr::Fby(fby) => {
 			let (e1, e2): &(ast::Expr, ast::Expr) = &*fby;
-			// TODO: extract tuples
-			Expr::Fby(vec!(normalize_atom(e1, intermediates)), vec!(normalize_bexpr(e2, intermediates)))
+			match (e1, e2) {
+				(ast::Expr::Tuple(v1), ast::Expr::Tuple(v2)) => {
+					Expr::Fby(
+						v1.iter().map(|e| normalize_atom(e, intermediates)).collect(),
+						v2.iter().map(|e| normalize_bexpr(e, intermediates)).collect(),
+					)
+				},
+				(ast::Expr::Tuple(_), _) | (_, ast::Expr::Tuple(_)) => {
+					panic!("Mismatched tuples in fby")
+				},
+				_ => {
+					Expr::Fby(
+						vec![normalize_atom(e1, intermediates)],
+						vec![normalize_bexpr(e2, intermediates)],
+					)
+				},
+			}
 		},
 		_ => Expr::Bexpr(normalize_bexpr(e, intermediates)),
 	}
