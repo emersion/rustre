@@ -1,4 +1,8 @@
 // Normalized AST
+//
+// This is a restriction of the raw AST. Expressions are flattened into basic expressions that
+// cannot contain calls or `fby` operators. Instead they can contain `Atom::Ident` that reference
+// the result of other equations.
 
 use std::collections::HashMap;
 pub use crate::ast::{Type, Const, Unop, Binop};

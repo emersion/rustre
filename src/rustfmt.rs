@@ -1,3 +1,29 @@
+// Rust code formatting
+//
+// Writes Rust code from a normalized and scheduled AST.
+//
+// This also compiles `fby` operators. This is the most interesting step.
+//
+// First, each node is assigned a memory if needed. This is done by the `get_node_mem` function,
+// which returns a `NodeMemory`. A node memory will contain two kind of objects:
+//
+// - One field per `fby` operator, which is initialized with the constant on the left of the
+//   operator
+// - One field per function call, which contains the memory of the callee
+//
+// Each node will translate to a Rust function and will take a mutable reference to its memory as
+// the first parameter.
+//
+// Once each node has a memory, we can start generating code.
+//
+// When generating a node's code, we replace `fby` operators to an access to the memory field. We
+// also add a function footer to update `fby` memory fields to their next value (expression on the
+// right of `fby`).
+//
+// When calling another node, we borrow a mutable reference to the call memory field. This is
+// possible because we have a mutable reference to our own memory. We provide this "sub-reference"
+// to the callee.
+
 use std::collections::HashMap;
 use std::io::{Write, Result};
 use crate::nast::*;
@@ -33,18 +59,18 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 		Bexpr::Binop(op, exprs) => {
 			let (e1, e2): &(Bexpr, Bexpr) = &*exprs;
 			format_bexpr(w, e1)?;
-			write!(w, "{} ", match op {
-				Binop::Plus | Binop::PlusDot => " +",
-				Binop::Minus | Binop::MinusDot => " -",
-				Binop::Mult | Binop::MultDot => " *",
-				Binop::Div | Binop::DivDot => " /",
-				Binop::Lt => " <",
-				Binop::Gt => " >",
-				Binop::Leq => " <=",
-				Binop::Geq => " >=",
-				Binop::Eq => " ==",
-				Binop::And => " &&",
-				Binop::Or => " ||",
+			write!(w, " {} ", match op {
+				Binop::Plus | Binop::PlusDot => "+",
+				Binop::Minus | Binop::MinusDot => "-",
+				Binop::Mult | Binop::MultDot => "*",
+				Binop::Div | Binop::DivDot => "/",
+				Binop::Lt => "<",
+				Binop::Gt => ">",
+				Binop::Leq => "<=",
+				Binop::Geq => ">=",
+				Binop::Eq => "==",
+				Binop::And => "&&",
+				Binop::Or => "||",
 			})?;
 			format_bexpr(w, e2)
 		},
@@ -102,20 +128,21 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, 
 			write!(w, ")")
 		},
 		Expr::Fby(_, _) => {
-			if dest.len() == 1 {
-				write!(w, "mem.{}", &dest[0])
-			} else {
+			if dest.len() != 1 {
 				write!(w, "(")?;
-				let mut first = true;
-				for d in dest {
-					if !first {
-						write!(w, ", ")?;
-					}
-					first = false;
-					write!(w, "mem.{}", d)?;
-				}
-				write!(w, ")")
 			}
+			let mut first = true;
+			for d in dest {
+				if !first {
+					write!(w, ", ")?;
+				}
+				first = false;
+				write!(w, "mem.{}", d)?;
+			}
+			if dest.len() != 1 {
+				write!(w, ")")?;
+			}
+			Ok(())
 		},
 		Expr::Bexpr(bexpr) => format_bexpr(w, bexpr),
 	}
@@ -123,19 +150,21 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, 
 
 fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	write!(w, "\tlet ")?;
-	let (fst, elems) = (&eq.names).split_first().unwrap();
-	if !elems.is_empty() {
+	if eq.names.len() != 1 {
 		write!(w, "(")?;
 	}
-	write!(w, "{}", fst)?;
-	for e in elems {
-		write!(w, ", {}", e)?;
+	let mut first = true;
+	for name in &eq.names {
+		if !first {
+			write!(w, ", ")?;
+		}
+		first = false;
+		write!(w, "{}", name)?;
 	}
-	if !elems.is_empty() {
+	if eq.names.len() != 1 {
 		write!(w, ")")?;
 	}
 	write!(w, " = ")?;
-	// TODO: support tuples
 	format_expr(w, &eq.body, &eq.names, mems)?;
 	write!(w, ";\n")
 }
@@ -170,14 +199,6 @@ fn format_arg_list(w: &mut Write, args: &HashMap<String, Type>, with_name: bool,
 	Ok(())
 }
 
-fn capitalize(s: &str) -> String {
-	let mut c = s.chars();
-	match c.next() {
-		None => String::new(),
-		Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-	}
-}
-
 fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, init_values: &HashMap<String, Const>) -> Result<()> {
 	write!(w, "#[derive(Debug)]\n")?;
 	write!(w, "struct {} {{\n", name)?;
@@ -202,24 +223,32 @@ fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, in
 	write!(w, "}}\n\n")
 }
 
+fn capitalize(s: &str) -> String {
+	let mut c = s.chars();
+	match c.next() {
+		None => String::new(),
+		Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+	}
+}
+
 struct NodeMemory {
 	name: String,
+	/// Name and type of each field
 	fields: HashMap<String, String>,
 	init_values: HashMap<String, Const>,
 	next_values: HashMap<String, Bexpr>,
 }
 
 fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemory> {
-	let mut fields = HashMap::new();
-	let mut init_values = HashMap::new();
-	let mut next_values = HashMap::new();
+	let mut fields = HashMap::new(); // Memory fields (both for function calls and `fby`)
+	let mut init_values = HashMap::new(); // Initialization values for each field (only for `fby`)
+	let mut next_values = HashMap::new(); // Next values for each field (only for `fby`)
 	for eq in &n.body {
 		match &eq.body {
 			Expr::Call{name, args: _} => {
-				for dest in &eq.names {
-					if let Some(call_mem) = mems.get(name) {
-						fields.insert(dest.clone(), call_mem.name.clone());
-					}
+				let dest = &eq.names[0];
+				if let Some(call_mem) = mems.get(name) {
+					fields.insert(dest.clone(), call_mem.name.clone());
 				}
 			},
 			Expr::Fby(init, next) => {
@@ -300,10 +329,12 @@ fn format_node(w: &mut Write, n: &Node, mems: &HashMap<String, NodeMemory>) -> R
 }
 
 pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
+	// Builtin functions
 	write!(w, "fn print(s: &str) {{\n")?;
 	write!(w, "\tprintln!(\"{{}}\", s);\n")?;
 	write!(w, "}}\n\n")?;
 
+	// Create one memory per node, if needed
 	let mut mems = HashMap::new();
 	for n in f {
 		if let Some(mem) = get_node_mem(n, &mems) {
@@ -311,6 +342,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 		}
 	}
 
+	// Generate code for each node
 	for n in f {
 		format_node(w, n, &mems)?;
 	}
@@ -318,6 +350,10 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 	// Call the last node in main()
 	write!(w, "fn main() {{\n")?;
 	if let Some(n) = f.last() {
+		let num_calls = 10;
+		write!(w, "\teprintln!(\"We will call node `{}` {} times.\");\n", &n.name, num_calls)?;
+
+		// Ask input arguments
 		for (name, typ) in &n.args_in {
 			if let Type::Unit = typ {
 				write!(w, "\tlet {} = ();\n", name)?;
@@ -342,11 +378,13 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 			args: argv,
 		};
 
+		// Initialize the callee memory
 		if let Some(call_mem) = mems.get(&n.name) {
 			write!(w, "\tlet mut mem: {} = Default::default();\n", &call_mem.name)?;
 		}
 
-		write!(w, "\tfor _ in 0..10 {{\n")?;
+		// Call the node in a loop
+		write!(w, "\tfor _ in 0..{} {{\n", num_calls)?;
 
 		write!(w, "\t\tlet v = ")?;
 		format_expr(w, &call, &vec![], &mems)?;

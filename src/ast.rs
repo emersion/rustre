@@ -1,3 +1,9 @@
+// Raw AST
+//
+// This is a 1:1 representation of Lustre source files.
+//
+// Dot operators can be applied to floats (non-dot operators can be applied to integers).
+
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy)]
@@ -18,6 +24,7 @@ pub enum Const {
 	String(String),
 }
 
+/// Unary operators.
 #[derive(Debug, Clone, Copy)]
 pub enum Unop {
 	Minus,
@@ -25,6 +32,7 @@ pub enum Unop {
 	Not,
 }
 
+/// Binary operators.
 #[derive(Debug, Clone, Copy)]
 pub enum Binop {
 	Plus,
@@ -53,8 +61,10 @@ pub enum Expr {
 	Const(Const),
 	Unop(Unop, Box<Expr>),
 	Binop(Binop, Box<(Expr, Expr)>),
+	/// Yields an initial value followed by an expression
 	Fby(Box<(Expr, Expr)>),
 	If(Box<(Expr, Expr, Expr)>),
+	/// Reference to the result of another equation.
 	Ident(String),
 	Tuple(Vec<Expr>),
 }
