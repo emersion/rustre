@@ -51,11 +51,11 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 			let (cond, body, else_part): &(Bexpr, Bexpr, Bexpr) = &*iff;
 			write!(w, "if (")?;
 			format_bexpr(w, cond)?;
-			write!(w, ") {{")?;
+			write!(w, ") {{ ")?;
 			format_bexpr(w, body)?;
-			write!(w, "}} else {{")?;
+			write!(w, " }} else {{ ")?;
 			format_bexpr(w, else_part)?;
-			write!(w, "}}")
+			write!(w, " }}")
 		},
 		Bexpr::Tuple(vex) => {
 			match vex.split_first() {
@@ -75,17 +75,19 @@ fn format_bexpr(w: &mut Write, bexpr: &Bexpr) -> Result<()> {
 	}
 }
 
-fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeMemory>) -> Result<()> {
+fn format_expr(w: &mut Write, e: &Expr, dest: &[String], mems: &HashMap<String, NodeMemory>) -> Result<()> {
 	match e {
 		Expr::Call{name, args} => {
 			write!(w, "{}(", name)?;
 			let mut first = true;
 			if let Some(_) = mems.get(name) {
-				if dest == "" {
+				if dest.is_empty() {
 					// Used in main()
 					write!(w, "&mut mem")?;
 				} else {
-					write!(w, "&mut mem.{}", dest)?;
+					// TODO: what to do if dest.len() > 1?
+					//assert!(dest.len() == 1);
+					write!(w, "&mut mem.{}", &dest[0])?;
 				}
 				first = false;
 			}
@@ -99,7 +101,20 @@ fn format_expr(w: &mut Write, e: &Expr, dest: &str, mems: &HashMap<String, NodeM
 			write!(w, ")")
 		},
 		Expr::Fby(_, _) => {
-			write!(w, "mem.{}", dest)
+			if dest.len() == 1 {
+				write!(w, "mem.{}", &dest[0])
+			} else {
+				write!(w, "(")?;
+				let mut first = true;
+				for d in dest {
+					if !first {
+						write!(w, ", ")?;
+					}
+					first = false;
+					write!(w, "mem.{}", d)?;
+				}
+				write!(w, ")")
+			}
 		},
 		Expr::Bexpr(bexpr) => format_bexpr(w, bexpr),
 	}
@@ -120,7 +135,7 @@ fn format_equation(w: &mut Write, eq: &Equation, mems: &HashMap<String, NodeMemo
 	}
 	write!(w, " = ")?;
 	// TODO: support tuples
-	format_expr(w, &eq.body, fst, mems)?;
+	format_expr(w, &eq.body, &eq.names, mems)?;
 	write!(w, ";\n")
 }
 
@@ -172,7 +187,7 @@ fn format_struct(w: &mut Write, name: &str, fields: &HashMap<String, String>, in
 
 	write!(w, "impl Default for {} {{\n", name)?;
 	write!(w, "\tfn default() -> Self {{\n")?;
-	write!(w, "\t\tSelf{{\n")?;
+	write!(w, "\t\tSelf {{\n")?;
 	for (k, _) in fields {
 		write!(w, "\t\t\t{}: ", k)?;
 		match init_values.get(k) {
@@ -200,12 +215,10 @@ fn get_node_mem(n: &Node, mems: &HashMap<String, NodeMemory>) -> Option<NodeMemo
 	for eq in &n.body {
 		match &eq.body {
 			Expr::Call{name, args: _} => {
-				// TODO: support tuples
-				assert!(eq.names.len() == 1);
-				let dest = &eq.names[0];
-
-				if let Some(call_mem) = mems.get(name) {
-					fields.insert(dest.clone(), call_mem.name.clone());
+				for dest in &eq.names {
+					if let Some(call_mem) = mems.get(name) {
+						fields.insert(dest.clone(), call_mem.name.clone());
+					}
 				}
 			},
 			Expr::Fby(init, next) => {
@@ -320,7 +333,7 @@ pub fn format(w: &mut Write, f: &[Node]) -> Result<()> {
 		write!(w, "\tfor _ in 0..10 {{\n")?;
 
 		write!(w, "\t\tlet v = ")?;
-		format_expr(w, &call, "", &mems)?;
+		format_expr(w, &call, &vec![], &mems)?;
 		write!(w, ";\n")?;
 
 		write!(w, "\t\teprintln!(\"{{:?}}\", &v);\n")?;
